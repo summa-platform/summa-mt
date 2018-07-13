@@ -1,10 +1,11 @@
 # -*- mode: makefile-gmake; indent-tabs-mode: true; tab-width: 4 -*-
 SHELL = bash
 
-LPAIRS = de-en
+LPAIRS = de-en fa-en
 
 # define model versions here
 de-en.MODEL = 20180712
+fa-en.MODEL = 20180622
 
 # YOU SHOULD NOT HAVE TO CHANGE ANYTHING BELOW THIS LINE
 # TO ADD MORE MODELS
@@ -34,12 +35,12 @@ endef
 
 define build_image
 
-build: models/$1/$2/Dockerfile
+build: build-$1
+build-$1: models/$1/$2/Dockerfile
 	docker build -t summaplatform/mt-$1-$2 --build-arg LANG_PAIR=$1 models/$1/$2
 
 endef
 
-LPAIRS = de-en
 # Very compact, but does a lot!
 $(foreach P,${LPAIRS},\
 $(eval $(call prepare_engine_image_with_model,$P,${$P.MODEL}))\

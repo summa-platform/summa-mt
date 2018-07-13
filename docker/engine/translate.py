@@ -150,9 +150,11 @@ async def preprocess(sentences, loop=None):
     if src in BPE2_LANGS:
         bpe  = pjoin(MODEL_PATH, "%s%s.bpe" % (src, trg))
         vcb  = pjoin(MODEL_PATH, "vocab.%s" % src)
-        cmd  = "%s -c %s --vocabulary %s --vocabulary-threshold %d" \
-               % (APPLY_BPE, bpe, vcb, BPE_VOCAB_THRESHOLD)
-        bpe = await create_subprocess_shell(cmd, stdin=PIPE, stdout=PIPE, loop=loop)
+        cmd  = [APPLY_BPE,"-c",bpe]
+        if os.path.exists(vcb):
+            cmd.extend([" --vocabulary",vcb,
+                        "--vocabulary-threshold","%d"%BPE_VOCAB_THRESHOD]) 
+        bpe = await create_subprocess_shell(" ".join(cmd), stdin=PIPE, stdout=PIPE, loop=loop)
         out, err = await bpe.communicate(out)
 
     logger.debug("OUTPUT:")
