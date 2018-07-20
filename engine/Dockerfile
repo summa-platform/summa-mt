@@ -2,6 +2,10 @@ FROM summaplatform/mt-builder as builder
 FROM ubuntu:16.04
 MAINTAINER Ulrich Germann <ugermann@inf.ed.ac.uk>
 
+# TO DO: install pip packages on the builder and create a .deb file there
+# that then can be used to install only the files needed in production
+# on the engine, instead of the whole pip infrastructure
+
 RUN apt-get update && apt-get install -y \
     curl \
     git \
@@ -19,36 +23,37 @@ RUN apt-get update && apt-get install -y \
 RUN pip3 install --upgrade pip setuptools && hash -r && pip3 install \
     PyYAML==3.12 requests==2.18.4 aio-pika==0.21.0
 
-WORKDIR /opt/app
-
 # Install BPE
 # RUN git clone https://github.com/rsennrich/subword-nmt.git --depth 1
 # now included in this repo
 
-# eserix sentence splitter
-RUN mkdir -p eserix/bin eserix/srx
-COPY --from=builder /opt/app/eserix/build/bin/eserix eserix/bin
-COPY --from=builder /opt/app/eserix/srx/rules.srx eserix/srx
-
-# marian server
-COPY --from=builder /opt/app/marian.build/marian-server .
-COPY --from=builder /opt/app/marian.build/marian-decoder .
-COPY --from=builder /opt/app/marian.build/marian-scorer .
-
-# install only those boost libraries that are needed
-RUN ldd marian-server \
-    | awk '/not found/ { print $1 }' \
-    | sed 's/\.so\.//;s/_/-/g'\
-    | xargs apt-get install -y 
-
-# install only those boost libraries that are needed
+# eserix sentence splitter, marian, etc.
+RUN mkdir -p /opt/eserix/bin /opt/eserix/srx /opt/marian 
+COPY --from=builder /opt/app/eserix/build/bin/eserix /opt/eserix/bin
+COPY --from=builder /opt/app/eserix/srx/rules.srx /opt/eserix/srx
+# install libraries needed by eserix:
 RUN ldd eserix/bin/eserix \
     | awk '/not found/ { print $1 }' \
     | sed 's/\.so\.//;s/_/-/g'\
     | xargs apt-get install -y 
 
-# Install server scripts and binaries
+# marian server
+# strictly speaking, we need only the marian server
+COPY --from=builder /opt/app/marian.build/marian-server /opt/marian/
+COPY --from=builder /opt/app/marian.build/marian-decoder /opt/marian/
+COPY --from=builder /opt/app/marian.build/marian-scorer /opt/marian/
+
+# install only libraries needed by marian
+RUN ldd /opt/marian/marian-server \
+    | awk '/not found/ { print $1 }' \
+    | sed 's/\.so\.//;s/_/-/g'\
+    | xargs apt-get install -y 
+
+# Install summa scripts; Dockerfiles currently don't seem to support wildcards,
+# so it's easer to add all to the working directory and then move them
+WORKDIR /opt/app
 ADD . .
+
 
 # clean up
 # RUN rm -rf /var/lib/apt/lists/* && apt-get purge -y python3-pip

@@ -13,11 +13,11 @@ de-en.MODEL = 20180712
 
 # build the builder image that compiles everything
 builder:
-	docker build -t summaplatform/mt-builder --pull docker/builder
+	docker build -t summaplatform/mt-builder --pull builder
 
 # build a blank engine image without models
 engine: 
-	docker build -t summaplatform/mt-engine docker/engine
+	docker build -t summaplatform/mt-engine engine
 
 define prepare_engine_image_with_model
 

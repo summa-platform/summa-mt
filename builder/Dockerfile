@@ -30,8 +30,16 @@ RUN wget -q https://cmake.org/files/v3.11/cmake-3.11.4-Linux-x86_64.sh
 RUN bash ./cmake-3.11.4-Linux-x86_64.sh --skip-license
 
 # Build Marian
+# We replace -march=native by -march=x86-64 for maximum portability.
+# I suspect that some of the crashes we've observed are due to incompatibility
+# between the CPU architecture of the host that compiled Marian for the
+# image and the hosts that eventually run the container.
+
 ARG MARIAN_VERSION=1.5.0
-RUN wget -qO- https://github.com/marian-nmt/marian-dev/archive/${MARIAN_VERSION}.tar.gz | tar xzf -
+RUN wget -qO- https://github.com/marian-nmt/marian-dev/archive/${MARIAN_VERSION}.tar.gz | tar xzf - \
+    && grep -r grep -r -- '-march=native' \
+    | xargs sed -i 's/-march=native/-march=x86-64/'
+
 WORKDIR /opt/app/marian.build
 RUN apt-get install -y libssl-dev cmake
 RUN rm -r * || true
@@ -46,5 +54,3 @@ RUN make -j
 WORKDIR /opt/app
 RUN git clone https://github.com/emjotde/eserix.git --depth 1
 RUN mkdir -p eserix/build && cd eserix/build && ../../bin/cmake .. && make -j
-
-
