@@ -32,7 +32,7 @@ RUN mkdir -p /opt/eserix/bin /opt/eserix/srx /opt/marian
 COPY --from=builder /opt/app/eserix/build/bin/eserix /opt/eserix/bin
 COPY --from=builder /opt/app/eserix/srx/rules.srx /opt/eserix/srx
 # install libraries needed by eserix:
-RUN ldd eserix/bin/eserix \
+RUN ldd /opt/eserix/bin/eserix \
     | awk '/not found/ { print $1 }' \
     | sed 's/\.so\.//;s/_/-/g'\
     | xargs apt-get install -y 
@@ -49,6 +49,7 @@ RUN ldd /opt/marian/marian-server \
     | sed 's/\.so\.//;s/_/-/g'\
     | xargs apt-get install -y 
 
+RUN apt-get install -y python3-regex
 # Install summa scripts; Dockerfiles currently don't seem to support wildcards,
 # so it's easer to add all to the working directory and then move them
 WORKDIR /opt/app

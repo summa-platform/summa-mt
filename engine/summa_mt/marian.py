@@ -21,8 +21,8 @@ async def read_from_stream(stream,callback):
 
 class MarianServer(object):
     def __init__(self,
-                 executable="./marian-server",
-                 config="./model/marian/decoder.yml",
+                 executable="/opt/marian/marian-server",
+                 config="/opt/model/marian/decoder.yml",
                  port=8080):
         self.server = None
         self.config = config

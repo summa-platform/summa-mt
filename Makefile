@@ -5,7 +5,9 @@ LPAIRS = de-en fa-en
 
 # define model versions here
 de-en.MODEL = 20180712
-fa-en.MODEL = 20180622
+de-en.BPE_THRESHOLD = 50
+fa-en.MODEL = 20180712
+fa-en.BPE_THRESHOLD = 0
 
 # YOU SHOULD NOT HAVE TO CHANGE ANYTHING BELOW THIS LINE
 # TO ADD MORE MODELS
@@ -18,7 +20,7 @@ builder:
 
 # build a blank engine image without models
 engine: 
-	docker build -t summaplatform/mt-engine engine
+	docker build -t summaplatform/mt-engine engine --no-cache
 
 define prepare_engine_image_with_model
 
@@ -26,10 +28,10 @@ prepare: models/$1/$2/Dockerfile
 models/$1/$2/model/$1/model_info.yaml:
 	mkdir -p $${@D}
 	MARIAN_MODEL=$2	\
-	docker/engine/summa_mt/download_summa_models.py -w $${@D} -m $1
+	engine/summa_mt/download_summa_models.py -w $${@D} -m $1
 
 models/$1/$2/Dockerfile: models/$1/$2/model/$1/model_info.yaml
-models/$1/$2/Dockerfile: docker/engine_with_model/Dockerfile
+models/$1/$2/Dockerfile: engine_with_model/Dockerfile
 	cp $$< $$@
 endef
 
@@ -37,7 +39,7 @@ define build_image
 
 build: build-$1
 build-$1: models/$1/$2/Dockerfile
-	docker build -t summaplatform/mt-$1-$2 --build-arg LANG_PAIR=$1 models/$1/$2
+	docker build -t summaplatform/mt-$1-$2 --build-arg LANG_PAIR=$1 --build-arg BPE_THRESHOLD=$${$1.BPE_THRESHOLD} models/$1/$2 
 
 endef
 
