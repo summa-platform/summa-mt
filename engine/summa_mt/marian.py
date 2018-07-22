@@ -43,6 +43,7 @@ class MarianServer(object):
                "-c", self.config,
                "--log-level", "critical",
                "--cpu-threads", "%d"%multiprocessing.cpu_count(),
+               "--optimize",
                "--mini-batch", "64"]
         logger.info("starting marian-server ... ")
         
