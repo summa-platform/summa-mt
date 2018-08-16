@@ -34,6 +34,7 @@ RUN apt-get update && apt-get install -y  intel-mkl-64bit-2018.2-046
 
 # we need a newer version of cmake (>= 3.6) to find openblas 
 WORKDIR /opt/app
+# We don't need cmake > 3.6 if we are using MKL
 # RUN wget -q https://cmake.org/files/v3.11/cmake-3.11.4-Linux-x86_64.sh
 # RUN bash ./cmake-3.11.4-Linux-x86_64.sh --skip-license
 
@@ -50,9 +51,9 @@ RUN mkdir -p eserix/build && cd eserix/build && cmake .. && make -j
 # between the CPU architecture of the host that compiled Marian for the
 # image and the hosts that eventually run the container.
 
-ARG MARIAN_VERSION=1.5.0
+ARG MARIAN_VERSION=1.6.0
 RUN wget -qO- https://github.com/marian-nmt/marian-dev/archive/${MARIAN_VERSION}.tar.gz | tar xzf - 
-#RUN grep -rl 'march=native' . | xargs sed -i 's/march=native/march=generic/'
+RUN grep -rl 'march=native' . | xargs sed -i 's/march=native/march=x86-64 -mavx/'
 
 WORKDIR /opt/app/marian.build
 # RUN rm -r * || true
