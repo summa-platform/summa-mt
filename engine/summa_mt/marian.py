@@ -35,8 +35,9 @@ class MarianServer(object):
         def log(msg):
             logger.info("[marian-server] %s"%msg.decode())
             pass
-        await asyncio.wait([read_from_stream(self.server.stdout,log),
-                            read_from_stream(self.server.stderr,log)])
+        # await asyncio.wait([read_from_stream(self.server.stdout,log),
+        #                     read_from_stream(self.server.stderr,log)])
+        await asyncio.wait([read_from_stream(self.server.stdout,log)])
     
     async def _start(self):
         cmd = [self.executable,
@@ -44,22 +45,28 @@ class MarianServer(object):
                "--log-level", "critical",
                "--cpu-threads", "%d"%multiprocessing.cpu_count(),
                "--optimize",
-               "--mini-batch", "64"]
+               "--mini-batch", "1"]
         logger.info("starting marian-server ... ")
-        
-        self.server = await subprocess(*cmd,stderr=PIPE,stdout=PIPE,loop=self.loop)
+        self.server = await subprocess(*cmd,
+                                       # stderr=PIPE,
+                                       # stdout=PIPE,
+                                       loop=self.loop)
         # wait until the server is ready
-        retries = 30
+        await asyncio.sleep(10)
+        retries = 300
         while retries:
-            await asyncio.sleep(1)
             try:
                 conn = create_connection("ws://localhost:%d/translate"%self.port)
                 break
             except:
+                await asyncio.sleep(1)
+                logger.info("Waiting for server: patience countdown is %d"%retries)
                 retries -= 1
                 pass
             pass
-            
+
+        # TO DO: handle failed connection
+        
         # while True:
         #     line = await self.server.stderr.readline()
         #     line = line.decode()
@@ -69,7 +76,7 @@ class MarianServer(object):
         #         break
         #     pass
         # let monitoring take over
-        self.running_monitor = asyncio.ensure_future(self.monitor())
+        # self.running_monitor = asyncio.ensure_future(self.monitor())
         return
 
     def start(self,loop):
@@ -86,7 +93,6 @@ class MarianServer(object):
         # - retry connection if it fails
         # - split large batches into smaller ones and send a heart beat for each
         #   batch
-        
         try:
             conn = create_connection("ws://localhost:%d/translate"%self.port)
         except:
@@ -100,11 +106,14 @@ class MarianServer(object):
         return result.rstrip()
 
     def translate(self,batch):
-        # translation = [asyncio.ensure_future(self._translate("\n".join(batch)))]
-        # for line in batch]
+        # translation = [self._translate(line) for line in batch]
         # translation = self.loop.run_until_complete(asyncio.gather(*translation))
-        translation = self.loop.run_until_complete(self._translate("\n".join(batch)))
-        return translation
+        # print(translation)
+        # translation = self.loop.run_until_complete(self._translate("\n".join(batch)))
+        t = []
+        for line in batch:
+            t.append(self.loop.run_until_complete(self._translate(line)))
+        return t
 
     async def _stop(self):
         if self.server:
