@@ -79,7 +79,13 @@ async def apply_step(cmd,text,loop):
     logger.debug(out.decode('utf8'))
     return out
 
-async def preprocess(sents, loop=None):
+def ssplit_fa(text):
+    sentpat = re.compile(r'.*?(?:[.!][\p{Pf}\p{Pe}]*|$)')
+    text = re.sub(r'\s+',' ',text.decode('utf8')).strip()
+    return "\n".join([x.group(0).strip() for x in sentpat.finditer(text) if len(x.group(0))]).encode('utf8')
+    
+
+async def preprocess(sents, lang, loop=None):
     global logger,whitespace
     logger.debug("Starting preprocessing.")
 
@@ -90,15 +96,25 @@ async def preprocess(sents, loop=None):
     
     text = "\n".join(sents).encode('utf8')
 
-    for step in [norm_cmd,   # normalize_punctuation
-                 ssplit_cmd, # split sentences
-                 tok_cmd,    # tokenize 
+    # normalise punctuation
+    text = await apply_step(norm_cmd,text,loop)
+
+    # split sentences
+    if lang == "fa":
+        # eserix doesn't handle Farsi
+        text = ssplit_fa(text)
+    else:
+        text = await apply_step(ssplit_cmd,text,loop) 
+        pass
+        
+    for step in [tok_cmd,    # tokenize 
                  true_cmd,   # truecase
                  bpe_cmd]:   # apply bpe
         text = await apply_step(step,text,loop)
-
+        
     logger.debug("PREPROCESSED INPUT:")
-    for t in text.decode('utf8').split('\n'): logger.debug(t)
+    for t in text.decode('utf8').split('\n'):
+        logger.debug(t)
     logger.debug("Preprocessing finished.")
 
     return text.decode('utf8').split('\n')
@@ -120,6 +136,6 @@ if __name__ == "__main__":
     init(opts.modeldir, opts.src, opts.trg)
     loop = asyncio.get_event_loop()
     text = sys.stdin.read().split('\n')
-    sents = loop.run_until_complete(preprocess(text,loop))
+    sents = loop.run_until_complete(preprocess(text,opts.src,loop))
     print("\n".join(sents))
     loop.close()
