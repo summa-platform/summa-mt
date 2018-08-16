@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, os, asyncio, traceback, logging, regex, copy
+import sys, os, asyncio, traceback, logging, regex, copy, time
 from asyncio.subprocess import create_subprocess_exec, create_subprocess_shell, PIPE
 from os.path import join as pjoin
 from summa_mt import marian
@@ -48,11 +48,10 @@ def init(model, modeldir=MODEL_DIR,loop=None):
     MyMarianServer = MarianServer(MARIAN_SERVER_EXECUTABLE,
                                   pjoin(MODEL_PATH,"decoder.yml"))
     MyMarianServer.start(loop)
-
+    
     detok_cmd  = "%s/summa_mt/tokenizer/detokenizer.perl -penn -q -l %s"%(basedir,TARGET_LANGUAGE)
     detrue_cmd = "%s/summa_mt/recaser/detruecase.perl"%basedir
 
-    # nmt.init('-c %s' % pjoin(MODEL_PATH, 'config.yaml'))
 
 def shutdown():
     if MyMarianServer:
@@ -104,12 +103,18 @@ async def postprocess(sentences, loop=None):
 
 
 async def translate(sentences, loop=None):
-    logger.debug("Start translating: {} sentences".format(len(sentences)))
+    logger.debug("Start translating: {} sentences".format(len(sentences)))#.split('\n'))))
     if sentences and not sentences[-1]:
         sentences.pop()
         pass
-    translation = await MyMarianServer._translate(sentences)
-    return translation
+    start = time.time()
+    translation = await MyMarianServer._translate("\n".join(sentences))
+    stop = time.time()
+    logger.debug("Pure translation time: %.1f"%(stop-start))
+    # print(translation,flush=True)
+    # t = [MyMarianServer._translate(s) for s in sentences]
+    # translation = await asyncio.gather(*t)
+    return translation.split('\n')
 
 
 # --- default_controller ---
@@ -125,10 +130,9 @@ def collect_sentences(instance):
 
 
 async def process_sentences(sentences, loop=None):
-    preprocessed = [sen for sen in (await preprocess(sentences, loop=loop)) if len(sen) > 0]
-    # post = preprocessed
-    translated = await translate("\n".join(preprocessed), loop=loop)
-    post = await postprocess(translated.split('\n'), loop=loop)
+    preprocessed = [sen for sen in (await preprocess(sentences, SOURCE_LANGUAGE, loop=loop)) if len(sen) > 0]
+    translated = await translate(preprocessed, loop=loop)
+    post = await postprocess(translated, loop=loop)
     return [sentence for sentence in post if sentence]
 
 
@@ -174,6 +178,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Machine Translation',
                                      formatter_class=ArgHelpFormatter)
     parser.add_argument('--debug', action='store_true',
+                        help='debug mode')
+    parser.add_argument('--debug-asyncio', action='store_true',
                         help='asyncio debug mode')
     parser.add_argument('--model-dir', '-d', type=str,
                         default=os.environ.get('MODEL_DIR', MODEL_DIR),
@@ -203,7 +209,7 @@ if __name__ == "__main__":
     init(args.model, args.model_dir)
 
     loop = asyncio.get_event_loop()
-    loop.set_debug(args.debug)
+    loop.set_debug(args.debug_asyncio)
 
     for filename in args.filename:
         if filename.endswith('json'):
@@ -220,9 +226,12 @@ if __name__ == "__main__":
                     print(t)
                     pass
                 pass
+            start = time.time()
             output = loop.run_until_complete(
                 process_sentences(text, loop=loop))
+            stop = time.time()
             print("\n".join(output))
+            print("%.1f sec. total translation time."%(stop-start),file=sys.stderr)
         else:
             with open(filename, 'r') as f:
                 text = f.read()
