@@ -75,6 +75,9 @@ except ImportError:
 
 
 async def on_message(message, reply, loop=None, name=task.name, verbose=True, **kwargs):
+    """
+    This function is triggered for each new message popped of the message queue.
+    """
     # with message.process():   # with message auto acknowledgement
     routing_keys = message.headers['replyToRoutingKeys']
     body_dict = json.loads(message.body.decode("utf-8"))
@@ -97,7 +100,12 @@ async def on_message(message, reply, loop=None, name=task.name, verbose=True, **
             # print(task_metadata)
             # print(task_data)
 
-        result_data = await task.process_message(task_data, loop=loop, send_reply=send_reply, metadata=task_metadata, reject=message.reject, **kwargs)
+        result_data = await task.process_message\
+                      (task_data, loop=loop,
+                       send_reply=send_reply, # for sending partial data / "heartbeat"
+                       metadata=task_metadata,
+                       reject=message.reject, \
+                       **kwargs)
 
         if verbose:
             print('Job for item %s completed!' % item)

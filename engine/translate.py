@@ -150,7 +150,7 @@ def encode_sentences(sentences):
 
 async def translate_document(document, loop=None):
 
-    logger.debug(document)
+    # logger.debug(document)
 
     new_instances = []
     for instance in document['instances']:

@@ -65,8 +65,13 @@ def reset():
 
 
 async def process_message(task_data, loop=None, send_reply=None, metadata=None, reject=None, **kwargs):
+    """
+    Process a translation request from the message queue. This is the function called by rabbitmq.py.
+    """
+    
     global collect_test_data, test_data_dir
 
+    # TODO: Test data collection should be pushed up to rabbitmq.py [UG]
     if collect_test_data:
         item = metadata.get('itemId', 'unknown')
         filename = os.path.join(test_data_dir, '%s.json' % item)
