@@ -1,208 +1,161 @@
 #!/usr/bin/env python3
 
-"""
-Process wrapper for marian server.
-"""
-import sys, time, argparse, logging, asyncio, signal
-import multiprocessing
+# TO DO:
+# - check if marian is already running
+# - allow connection to remote marian server
+
+import regex, time, sys, os, logging, yaml
+from prepostprocess import PrePostProcessor
 from websocket import create_connection
-from asyncio.subprocess import create_subprocess_exec as subprocess, PIPE, STDOUT
+from argparse import ArgumentParser
+from subprocess import Popen, PIPE
 
 logger = logging.getLogger(__name__)
-
-async def read_from_stream(stream,callback):
-    while True:
-        line = await stream.readline()
-        if line:
-            callback(line)
-        else:
-            break
-        
-
-class MarianServer(object):
-    def __init__(self,
-                 executable="/opt/marian/marian-server",
-                 config="/opt/model/marian/decoder.yml",
-                 port=8080):
-        self.server = None
+class MarianServer:
+    def __init__(self,config):
         self.config = config
-        self.executable = executable
-        self.port = port
-        self.running_monitor = None
-        pass
-
-    async def monitor(self):
-        def log(msg):
-            logger.info("[marian-server] %s"%msg.decode())
-            pass
-        # await asyncio.wait([read_from_stream(self.server.stdout,log),
-        #                     read_from_stream(self.server.stderr,log)])
-        await asyncio.wait([read_from_stream(self.server.stdout,log)])
-    
-    async def _start(self):
-        cmd = [self.executable,
-               "-c", self.config,
-               "--log-level", "critical",
-               "--cpu-threads", "%d"%multiprocessing.cpu_count(),
-               "--optimize",
-               "--mini-batch", "1"]
-        logger.info("starting marian-server ... ")
-        self.server = await subprocess(*cmd,
-                                       # stderr=PIPE,
-                                       # stdout=PIPE,
-                                       loop=self.loop)
-        # wait until the server is ready
-        await asyncio.sleep(10)
-        retries = 300
-        while retries:
-            try:
-                conn = create_connection("ws://localhost:%d/translate"%self.port)
-                break
-            except:
-                await asyncio.sleep(1)
-                logger.info("Waiting for server: patience countdown is %d"%retries)
-                retries -= 1
-                pass
-            pass
-
-        # TO DO: handle failed connection
-        
-        # while True:
-        #     line = await self.server.stderr.readline()
-        #     line = line.decode()
-        # logger.info("[marian-server]: %s"%line)
-        #     if line.find("Server is listening on port ") >= 0:
-        logger.info("marian-server started")
-        #         break
-        #     pass
-        # let monitoring take over
-        # self.running_monitor = asyncio.ensure_future(self.monitor())
         return
 
-    def start(self,loop):
-        self.loop = loop
-        return self.loop.run_until_complete(self._start())
-
-    async def _translate_single_line(self,conn,batch):
-        conn.send(line)
-        result = conn.recv()
-        return conn.recv()
-
-    async def _translate(self,batch):
-        # TO DO:
-        # - retry connection if it fails
-        # - split large batches into smaller ones and send a heart beat for each
-        #   batch
-        try:
-            conn = create_connection("ws://localhost:%d/translate"%self.port)
-        except:
-            logger.critical("No connection to server at port %d"%self.port)
-            return None
-            pass
-        # logger.debug("got batch"+batch)
-        conn.send(batch)
-        result = conn.recv()
-        conn.close()
-        return result.rstrip()
-
-    def translate(self,batch):
-        # translation = [self._translate(line) for line in batch]
-        # translation = self.loop.run_until_complete(asyncio.gather(*translation))
-        # print(translation)
-        # translation = self.loop.run_until_complete(self._translate("\n".join(batch)))
-        t = []
-        for line in batch:
-            t.append(self.loop.run_until_complete(self._translate(line)))
-        return t
-
-    async def _stop(self):
-        if self.server:
-            try:
-                self.server.kill()
-            except:
-                pass
-            pass
-        # loog all trailing output of the server
-        if self.running_monitor:
-            await asyncio.gather(self.running_monitor)
-        logger.info("Server stopped")
-        self.server = None
-        try:
-            asyncio.sleep(1)
-        except asyncio.CancelledError:
-            logger.info("Got Cancelled Error")
-            pass
+    def start(self,loglevel='critical'):
+        marian = os.environ['MARIAN_SERVER_EXE']
+        cmd = [marian,"-c",self.config,"--log-level",loglevel]
+        self.marian = Popen(cmd)
         return
     
     def stop(self):
-        self.loop.run_until_complete(self._stop())
+        self.marian.kill()
         return
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-b", "--batch-size", type=int, default=1)
-    parser.add_argument("-p", "--port", type=int, default=8080)
-    return parser.parse_args()
+    def __del__(self):
+        self.stop()
 
+class MarianClient:
+    def __init__(self,remote):
+        # host should be a full spec: protocol://host:port/path
+        pattern = regex.compile(r"""(?P<protocol>.*?://)?(?P<host>.*?)
+        (?P<port>:[0-9]+)?(?P<path>/.*)?$""",regex.VERBOSE)
+        if remote:
+            m = pattern.match(remote)
 
-def shutdown():
-    # loop.run_until_complete(asyncio.gather(self.running_monitor))
-    asyncio.ensure_future(asyncio.get_event_loop.stop())
+            # default protocol is (for the time being)
+            self.prot = m.group('protocol') if m.group('protocol') else "ws://"
+            self.host = m.group('host') if m.group('host') else 'localhost'
+            self.port = m.group('port') if m.group('port') else ''
+            self.path = m.group('path') if m.group('path') else ''
+            self.url = "%s%s%s%s"%(self.prot, self.host, self.port, self.path)
+        else:
+            self.url = "ws://localhost/translate"
+        return
 
+    def connect(self):
+        if self.prot == "ws://": # web socket server
+            return create_connection(self.url)
+        elif self.prot == "amqp://":
+            # not implemented yet
+            return None
+        elif self.prot.startswith("http"):
+            # no permanent connection needed
+            return None
+        
+    def reconnect(self):
+        max_tries  = 60
+        sleep_time = 1
+        for attempt in range(max_tries):
+            try:
+                self.conn = self.connect()
+                break
+            except:
+                if attempt + 1 < max_tries:
+                    logger.info("Could not connect to translation server at %s. "
+                                "%d tries left"%(self.url, max_tries - attempt - 1))
+                    time.sleep(sleep_time)
+                else:
+                    logger.error("Fatal error: could not connect for "
+                                 "%d seconds."%(sleep_time * max_tries))
+                    raise "Connection Error"
+                pass
+            pass
+        pass
 
+    def translate(self,line):
+        retries = 3
+        while retries:
+            try:
+                self.conn.send(line)
+                translation = self.conn.recv()
+                break
+            except:
+                retries -= 1
+                if not retries:
+                    logger.error("Cannot communicate with server. Giving up.")
+                    raise
+                else: conn = self.reconnect()
+                pass
+            pass
+        return translation
+    pass # end of class definition of MarianClient
+
+class Translator:
+    def __init__(self, model_dir, marian = None):
+        # marian should None for the time being
+        # eventually it should be an optional specification of
+        # host, port, and protocol of a connection to a marian service
+        # (http(s), ws, amqp, etc.)
+        self.preprocess  = PrePostProcessor(model_dir+"/preprocess.yml")
+        self.postprocess = PrePostProcessor(model_dir+"/postprocess.yml")
+        if not marian:
+            marian = "ws://localhost:8080/translate"
+            self.marian_server = MarianServer(model_dir+"/decoder.yml")
+        else:
+            self.marian_server = None
+            pass
+        self.marian_client = MarianClient(marian)
+        self.start()
+        return
+
+    def start(self):
+        if self.marian_server: self.marian_server.start()
+        self.marian_client.reconnect()
+        return
+
+    def stop(self):
+        if self.marian_server:
+            self.marian_server.stop()
+            pass
+        return
+    
+    def __call__(self,paragraph):
+        sentences = self.preprocess(paragraph)
+        translation = self.marian_client.translate("\n".join(sentences))
+        postprocessed = self.postprocess(translation.strip().split('\n'))
+        return postprocessed
+    
+    pass # end of class definition
+
+def parse_arguments(args=sys.argv[1:]):
+    p = ArgumentParser()
+    p.add_argument("-v", "--verbose", const='INFO', default='WARN',nargs='?')
+    p.add_argument("-m", "--model", help="path to model directory")
+    return p.parse_args()
+    
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s: %(levelname)s:  %(message)s',
-                        datefmt="%Y-%m-%d %H:%M:%S")
-    exe = "/home/shared/germann/code/marian-dev/build/marian-server"
-    cfg = "/home/shared/germann/code/marian-dev/models/uedin-wmt18-de-en-run5/marian/decoder.yml"
-    M = MarianServer(exe,cfg)
-    loop = asyncio.get_event_loop()
-    
-    # loop.run_until_complete(M.start(loop))
-    M.start(loop)
-    # M.translate
-    # loop.run_until_
-    # while True:
-    #     await asyncio.sleep(3)
-    #     pass
-    for i in range(20):
-        print(M.translate(["oh wie schön ist Panama ."]))
-        time.sleep(.5)
-        pass
+    opts = parse_arguments()
+    logging.basicConfig(level=opts.verbose,format="%(levelname)s %(message)s")
+    translate = Translator(opts.model)
     try:
-        # trans = M.translate(['auch diese Woche war wichtig .']*100)
-        trans = M.translate(['auch diese Woche war wichtig .']*5)
-        print(trans)
-    except:
-        pass
-    # M.stop()
-    # M.start(loop)
-    # pass
-    M.stop()
-    # shutdown()
-    # loop.run_until_complete(asyncio.sleep(10))
-    # loop.close()
-    
-    # loop.run_forever()
-    # loop.run_until_complete(M.stop())
-    
-    # monitor.cancel()
-    loop.close()
-    
-    # asyncio.wait(monitor)
-    
-    # args = parse_args()
-
-    # count = 0
-    # batch = ""
-    # for line in sys.stdin:
-    #     count += 1
-    #     batch += line.decode('utf-8') if sys.version_info < (3, 0) else line
-    #     if count == args.batch_size:
-    #         translate(batch, port=args.port)
-    #         count = 0
-    #         batch = ""
-
-    # if count:
-    #     translate(batch, port=args.port)
+        for line in sys.stdin:
+            if line.strip() == '': print()
+            else:
+                translation = translate(line)
+                if type(translation).__name__ == 'str':
+                    print(translation.strip())
+                else:
+                    for line in translation:
+                        print(line)
+                        pass
+                    pass
+                pass
+            pass
+    except KeyboardInterrupt:
+        translate.stop()
+        sys.exit(1)
