@@ -14,16 +14,17 @@ logger = logging.getLogger(__name__)
 class MarianServer:
     def __init__(self,config):
         self.config = config
+        self.marian = None
         return
 
     def start(self,loglevel='critical'):
         marian = os.environ['MARIAN_SERVER_EXE']
-        cmd = [marian,"-c",self.config,"--log-level",loglevel]
+        cmd = [marian, "-c", self.config, "--log-level", loglevel]
         self.marian = Popen(cmd)
         return
     
     def stop(self):
-        self.marian.kill()
+        if self.marian: self.marian.kill()
         return
 
     def __del__(self):
@@ -44,7 +45,7 @@ class MarianClient:
             self.path = m.group('path') if m.group('path') else ''
             self.url = "%s%s%s%s"%(self.prot, self.host, self.port, self.path)
         else:
-            self.url = "ws://localhost/translate"
+            self.url = "ws://localhost:8080/translate"
         return
 
     def connect(self):
@@ -104,7 +105,9 @@ class Translator:
         self.preprocess  = PrePostProcessor(model_dir+"/preprocess.yml")
         self.postprocess = PrePostProcessor(model_dir+"/postprocess.yml")
         if not marian:
-            marian = "ws://localhost:8080/translate"
+            info = yaml.load(open(model_dir+"/decoder.yml"))
+            marian = "ws://localhost:%d/translate"%info.get('port',8080)
+            # print("MARIAN",marian)
             self.marian_server = MarianServer(model_dir+"/decoder.yml")
         else:
             self.marian_server = None
