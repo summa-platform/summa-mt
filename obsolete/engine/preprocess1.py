@@ -60,7 +60,7 @@ def init(model_dir,srclang,trglang):
     
 def split_long_sentences(sents, maxlen):
     return [s[i:i+maxlen] for s in sents
-            for i in range(0,len(sents),maxlen)]
+            for i in range(0,len(s),maxlen)]
 
 async def apply_step(cmd,text,loop):
     logger.debug('Applying command: %s'%cmd)
