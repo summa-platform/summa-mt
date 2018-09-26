@@ -20,7 +20,8 @@ RUN apt-get update && apt-get install -y \
 # won't need OpenBLAS any more, may have to install MKL instead
 # see http://dirk.eddelbuettel.com/blog/2018/04/15/.
 
-RUN pip3 install --upgrade pip setuptools && hash -r && pip3 install \
+RUN pip3 install --upgrade pip setuptools && hash -r \
+    && pip3 install retry pika \
     PyYAML==3.12 requests==2.18.4 aio-pika==0.21.0
 
 # Install BPE
