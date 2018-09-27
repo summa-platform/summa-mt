@@ -40,22 +40,52 @@ def download_model(session,url,dest):
         pass
     return
 
+def get_url_and_dest(opts):
+    if opts.url:
+        if not opts.mpath:
+            raise Exception("Option --url requires --path")
+        return opts.url, opts.mpath
+    catalog = yaml.load(open(opts.config))
+    lpair = opts.lpair
+    if not lpair in catalog['mt-models']:
+        raise Exception("No models listed for language pair '%r'"%lpair)
+    choices = catalog['mt-models'][lpair]
+    version = choices.get('latest') if opts.version=='latest' else opts.version
+    info = choices.get(version, None)
+    if not info:
+        raise Exception("Requested model version '%s' not listed."%opts.version)
+    path = opts.mpath if opts.mpath else \
+           "%s/mt/%s/%s"%(opts.mroot, opts.lpair, version)
+    return info['URL'], path
+
 def main(opts):
     try: os.makedirs(opts.dest)
     except: pass
-    base_url = regex.sub(r'(/(model_info\.yaml)?)?$','',opts.url)
+    url, dest = get_url_and_dest(opts)
+    print(url,dest)
+
+    base_url = regex.sub(r'(/(model_info\.yaml)?)?$','', url)
     with closing(asyncio.get_event_loop()) as loop:
         conn = aiohttp.TCPConnector(limit=CONNECTION_POOL_SIZE)
         with aiohttp.ClientSession(loop=loop, connector=conn) as session:
-            job = download_model(session,base_url,opts.dest)
+            job = download_model(session,base_url, dest)
             result = loop.run_until_complete(job)
     return
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
     p = ArgumentParser()
-    p.add_argument("url",nargs='?',default="http://data.statmt.org/summa/mt/models/de-en/20180712/model_info.yaml")
-    p.add_argument("dest",nargs='?',default="downloads")
+    p.add_argument("--config", "-c", default="catalog.yml",
+                   help="Catalog of available models.")
+    p.add_argument("--url", help="Download directly from URL")
+    p.add_argument("lpair", nargs='?', help = "language pair")
+    p.add_argument("version", nargs='?', default='latest',
+                   help = "model version")
+    p.add_argument("-M", dest="mroot", default="models",
+                   help = "model root directory")
+    p.add_argument("--path", dest="mpath", 
+                   help="override automatic model path generation "
+                   "with specific directory")
     opts = p.parse_args()
     main(opts)
     

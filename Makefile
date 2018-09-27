@@ -1,93 +1,56 @@
 # -*- mode: makefile-gmake; indent-tabs-mode: true; tab-width: 4 -*-
 SHELL = bash
 
-LPAIRS = de-en fa-en
+MODULE_NAME = summa-mt
+MODULE_VERSION = 1.0.0
 
-# define model versions here
-de-en.VERSION = 20180712
-de-en.BPE_THRESHOLD = 50
-fa-en.VERSION = 20180712
-fa-en.BPE_THRESHOLD = 0
+image: marian debfile eserix
 
-# YOU SHOULD NOT HAVE TO CHANGE ANYTHING BELOW THIS LINE
-# TO ADD MORE MODELS
+marian: CMAKE_FLAGS  =-DUSE_STATIC_LIBS=on 
+marian: CMAKE_FLAGS +=-DCMAKE_BUILD_TYPE=Nonative 
+marian: CMAKE_FLAGS +=-DCOMPILE_CUDA=off
+marian: CMAKE_FLAGS +=-DCMAKE_INSTALL_PREFIX=${PWD}/engine
+marian: engine/bin/marian-server
 
-.PHONY: builder engine
+engine/bin/marian-server: submodules/marian/build/marian-server
+	mkdir -p ${@D}
+	cp $(addprefix submodules/marian/build/marian-, server decoder scorer) ${@D}
 
-# build the builder image that compiles everything
-builder:
-	docker build -t summaplatform/mt-builder --pull builder
+submodules/marian/build/marian-server:
+	git submodule update --init submodules/marian 
+	mkdir -p ${@D} && rm -rf ${@D}/* 
+	cd submodules/marian/build && cmake ${CMAKE_FLAGS} .. && make -j
 
-# build a blank engine image without models
-engine: 
-	docker build -t summaplatform/mt-engine engine --no-cache
+# Installing pip3 on a production image adds about 250MB to the image size.
+# To avoid this overhead, we create a .deb file that installs all packaged that
+# normally would have to be installed through pip3.
+engine/3rd-party.deb: package_name = 3rd-party
+engine/3rd-party.deb: tmpdir = engine/${package_name}
+engine/3rd-party.deb: control = ${tmpdir}/DEBIAN/control
+engine/3rd-party.deb: python_packages  = retry pika requests PyYAML 
+engine/3rd-party.deb: python_packages += aiohttp aio-pika
+engine/3rd-party.deb:
+	mkdir -p $(dir ${control})
+	pip3 install ${python_packages} --root ${tmpdir}
+	for f in $$(find ${tmpdir} -name '*.so'); do strip -S $$f; done 
+	echo "Package: summa-mt-pip" > ${control}
+	echo "Version: ${MODULE_VERSION}" >> ${control}
+	echo 'Maintainer: SUMMA Consortium' >> ${control}
+	echo 'Description: MT engine for the SUMMA Platform' >> ${control}
+	echo 'Architecture: amd64' >> ${control}
+	dpkg-deb --build ${tmpdir}
+	rm -rf ${tmpdir}
 
-.PHONY: download-models
+debfile: engine/3rd-party.deb
+eserix: engine/bin/eserix engine/srx/rules.srx
 
-define download_model
+engine/srx/rules.srx: submodules/eserix/srx/rules.srx
+	cp $< $@
 
-download-models: models/mt/$1/$2/model_info.yaml
-models/mt/$1/$2/model_info.yaml: URL=http://data.statmt.org/summa/mt/models/$1/$2
-models/mt/$1/$2/model_info.yaml:
-	mkdir -p $${@D}
-	./scripts/download_model.py $${URL} $${@D}
+engine/bin/eserix:| submodules/eserix/srx/rules.srx
+	mkdir -p submodules/eserix/build && cd submodules/eserix/build && cmake .. && make -j
+	cp submodules/eserix/build/bin/eserix $@
 
-endef
+submodules/eserix/srx/rules.srx:
+	git submodule update --init submodules/eserix
 
-# define prepare_engine_image_with_model
-
-# prepare: models/$1/$2/Dockerfile
-# models/$1/$2/model/$1/model_info.yaml:
-# 	mkdir -p $${@D}
-# 	MARIAN_MODEL=$2	\
-# 	docker/engine/summa_mt/download_summa_models.py -w $${@D} -m $1
-
-# models/$1/$2/Dockerfile: models/$1/$2/model/$1/model_info.yaml
-# models/$1/$2/Dockerfile: engine_with_model/Dockerfile
-# 	cp $$< $$@
-# endef
-
-# define build_image
-
-# build: build-$1
-# build-$1: models/$1/$2/Dockerfile
-# 	docker build -t summaplatform/mt-$1-$2 --build-arg LANG_PAIR=$1 --build-arg BPE_THRESHOLD=$${$1.BPE_THRESHOLD} models/$1/$2 
-
-# endef
-
-marian: marian-dev/build/marian-decoder
-marian-dev/build/marian-decoder: CMAKE_FLAGS  = -DUSE_STATIC_LIBS=on 
-marian-dev/build/marian-decoder: CMAKE_FLAGS  = -DCMAKE_BUILD_TYPE=Nonative 
-marian-dev/build/marian-decoder: CMAKE_FLAGS  = -DCOMPILE_CUDA=off
-marian-dev/build/marian-decoder:
-	git submodule update --init marian-dev
-	mkdir ${@D} && cd ${@D} && cmake ${CMAKE_FLAGS} .. && make -j
-
-eserix: eserix/build/eserix
-eserix/build/eserix:
-	git submodule update --init eserix
-	mkdir ${@D} && cd ${@D} && cmake .. && make -j
-
-
-
-# Very compact, but does a lot!
-# $(foreach P,${LPAIRS},\
-# $(eval $(call prepare_engine_image_with_model,$P,${$P.MODEL}))\
-# $(eval $(call build_image,$P,${$P.MODEL})))
-
-$(foreach P,${LPAIRS},\
-$(eval $(call download_model,$P,${$P.VERSION})))
-
-export settings
-local.env: Makefile
-	echo -e $$settings | sed 's/^ *//' > $@
-
-define settings
-
-ESERIX_CMD=${PWD}/eserix/build/bin/eserix\n
-ESERIX_RULES=${PWD}/eserix/srx/rules.srx\n
-NORMPUNCT_CMD=${PWD}/docker/engine/summa_mt/tokenizer/normalize-punctuation.perl\n
-export ESERIX_CMD\n
-export ESERIX_RULES\n
-export NORMPUNCT_CMD
-endef

@@ -5,18 +5,22 @@ MAINTAINER Ulrich Germann <ugermann@inf.ed.ac.uk>
 # ENGINE docker image via ../engine/Dockerfile.
 
 # wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB
-RUN apt-get update 
-RUN apt-get install -y git \
-    apt-transport-https \
-    libeigen3-dev \
-    libopenblas-base \
-    libopenblas-dev \
-    python3-pip \
-    gfortran \
-    zlib1g-dev \
-    g++ \
-    automake \
+
+# Intel MKL is so expensive to install that we install it as on one of the first
+# Docker layers
+COPY GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB .
+RUN apt-get update \
+    && apt-get install -y apt-transport-https \
+    && apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB \
+    && echo deb https://apt.repos.intel.com/mkl all main >/etc/apt/sources.list.d/intel-mkl.list \
+    && apt-get update && apt-get install -y  intel-mkl-64bit-2018.2-046
+
+RUN apt-get install -y \
     autoconf \
+    automake \
+    cmake \
+    g++ \
+    libssl-dev \
     libtool \
     libboost-all-dev \
     libgoogle-perftools-dev \
@@ -24,26 +28,21 @@ RUN apt-get install -y git \
     unzip \
     wget 
 
-COPY GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB .
-RUN apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB \
-    && echo deb https://apt.repos.intel.com/mkl all main > /etc/apt/sources.list.d/intel-mkl.list 
-RUN apt-get update && apt-get install -y  intel-mkl-64bit-2018.2-046 
-
-    
-#    && rm -rf /var/lib/apt/lists/*
-
-# we need a newer version of cmake (>= 3.6) to find openblas 
-WORKDIR /opt/app
-# We don't need cmake > 3.6 if we are using MKL
-# RUN wget -q https://cmake.org/files/v3.11/cmake-3.11.4-Linux-x86_64.sh
-# RUN bash ./cmake-3.11.4-Linux-x86_64.sh --skip-license
-
-RUN apt-get install -y libssl-dev cmake
-
 # Install eserix (sentence splitter)
 WORKDIR /opt/app
-RUN git clone https://github.com/emjotde/eserix.git --depth 1
+RUN git clone https://github.com/summa-platform/eserix.git --depth 1
 RUN mkdir -p eserix/build && cd eserix/build && cmake .. && make -j
+
+# git \
+#     python3-pip \
+#     gfortran \
+#     zlib1g-dev \
+
+# the following packages are probably not needed any more
+# libeigen3-dev \
+# libopenblas-base \
+# libopenblas-dev \
+
 
 # Build Marian
 # We replace -march=native by -march=x86-64 for maximum portability.
@@ -65,7 +64,4 @@ WORKDIR /opt/app/marian.build
 RUN cmake -DCOMPILE_CUDA=off -DUSE_STATIC_LIBS=on -DCMAKE_BUILD_TYPE=Release ../marian-dev-${MARIAN_VERSION}
 RUN make -j
 
-
-# TO DO
-# - clean up the installed packages. We probably  don't need openblas and eigen any more.
-# - compile marian staticly
+#    && rm -rf /var/lib/apt/lists/*
