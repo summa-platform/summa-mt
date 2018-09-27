@@ -4,3 +4,5 @@ test
 __pycache__
 local.env
 testing
+engine/3rd-party.deb
+engine/bin

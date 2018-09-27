@@ -1,21 +1,32 @@
-#FROM summaplatform/mt-builder as builder
+# Uncomment the lines below to build the components in a Docker image.
+# If possible, I recommend building on the host and copying from there.
+FROM summaplatform/mt-builder as builder
+ARG MARIAN_VERSION=master
+ARG ESERIX_VERSION=master
+COPY Makefile .
+RUN git clone http://github.com/marian-nmt/marian \
+    && cd marian && git checkout ${MARIAN_VERSION} && cd - \
+    && make marian
+
+RUN git clone http://github.com/summa-platform/eserix \
+    && cd eserix && git checkout ${ESERIX_VERSION} && cd - \
+    && make eserix
+
+RUN make
+RUN find engine
+    
 FROM ubuntu:16.04
 LABEL maintainer="Ulrich Germann <ugermann@inf.ed.ac.uk>"
+RUN apt-get update 
+RUN apt-get install -y libtcmalloc-minimal4 
+RUN apt-get install -y python3-regex 
+RUN apt-get install -y python3-websocket
+RUN apt-get install -y libpcrecpp0v5
 
-RUN apt-get update && \
-    apt-get install -y \
-    libpcre3 \
-    libtcmalloc-minimal4 \
-    python3-regex \
-    python3-websocket
-
-    # curl \
-    # git \
-    # wget 
-
-WORKDIR /opt/summa
+WORKDIR /opt/app
+COPY --from=builder /engine .
 ADD . .
-RUN dpkg -i 3rd-party.deb
+RUN dpkg -i 3rd-party.deb && rm 3rd-party.deb
 RUN ldd bin/eserix \
     | awk '/not found/ { print $1 }' \
     | sed 's/\.so\.//;s/_/-/g'\
@@ -27,21 +38,21 @@ RUN ldd bin/marian-server \
     | xargs apt-get install -y 
 
 
+#     # curl \
+#     # git \
+#     # wget 
+
+# WORKDIR /opt/summa
+# ADD . .
+# # If you build components in a docker container, use with --from=builder.
+
+
+
 
 # RUN mkdir -p /opt/eserix/bin /opt/eserix/srx /opt/marian 
 # COPY --from=builder /opt/app/eserix/build/bin/eserix /opt/eserix/bin
 # COPY --from=builder /opt/app/eserix/srx/rules.srx /opt/eserix/srx
 # # install libraries needed by eserix:
-# RUN ldd /opt/eserix/bin/eserix \
-#     | awk '/not found/ { print $1 }' \
-#     | sed 's/\.so\.//;s/_/-/g'\
-#     | xargs apt-get install -y 
-
-# # install shared libraries needed by marian
-# RUN ldd /opt/marian/marian-server \
-#     | awk '/not found/ { print $1 }' \
-#     | sed 's/\.so\.//;s/_/-/g'\
-#     | xargs apt-get install -y 
 
 # WORKDIR /opt/app
 # ADD . .

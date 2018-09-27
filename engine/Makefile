@@ -4,7 +4,7 @@ SHELL = bash
 MODULE_NAME = summa-mt
 MODULE_VERSION = 1.0.0
 
-image: marian debfile eserix
+all: marian debfile eserix
 
 marian: CMAKE_FLAGS  =-DUSE_STATIC_LIBS=on 
 marian: CMAKE_FLAGS +=-DCMAKE_BUILD_TYPE=Nonative 
@@ -12,14 +12,16 @@ marian: CMAKE_FLAGS +=-DCOMPILE_CUDA=off
 marian: CMAKE_FLAGS +=-DCMAKE_INSTALL_PREFIX=${PWD}/engine
 marian: engine/bin/marian-server
 
-engine/bin/marian-server: submodules/marian/build/marian-server
+engine/bin/marian-server: marian/build/marian-server
 	mkdir -p ${@D}
-	cp $(addprefix submodules/marian/build/marian-, server decoder scorer) ${@D}
+	cp $(addprefix marian/build/marian-, server decoder scorer) ${@D}
 
-submodules/marian/build/marian-server:
-	git submodule update --init submodules/marian 
+marian/build/marian-server: marian/CMakeLists.txt
 	mkdir -p ${@D} && rm -rf ${@D}/* 
-	cd submodules/marian/build && cmake ${CMAKE_FLAGS} .. && make -j
+	cd marian/build && cmake ${CMAKE_FLAGS} .. && make -j
+
+marian/CMakeLists.txt:
+	git submodule update --init marian 
 
 # Installing pip3 on a production image adds about 250MB to the image size.
 # To avoid this overhead, we create a .deb file that installs all packaged that
@@ -44,13 +46,14 @@ engine/3rd-party.deb:
 debfile: engine/3rd-party.deb
 eserix: engine/bin/eserix engine/srx/rules.srx
 
-engine/srx/rules.srx: submodules/eserix/srx/rules.srx
+engine/srx/rules.srx: eserix/srx/rules.srx
+	mkdir -p ${@D}
 	cp $< $@
 
-engine/bin/eserix:| submodules/eserix/srx/rules.srx
-	mkdir -p submodules/eserix/build && cd submodules/eserix/build && cmake .. && make -j
-	cp submodules/eserix/build/bin/eserix $@
+engine/bin/eserix:| eserix/srx/rules.srx
+	mkdir -p eserix/build && cd eserix/build && cmake .. && make -j
+	cp eserix/build/bin/eserix $@
 
-submodules/eserix/srx/rules.srx:
-	git submodule update --init submodules/eserix
+eserix/srx/rules.srx:
+	git submodule update --init eserix
 
