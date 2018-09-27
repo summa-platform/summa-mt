@@ -1,0 +1,15 @@
+mt-models:
+  de-en:
+    latest: "20180712"
+    "20180712": 
+      URL: "http://data.statmt.org/summa/mt/models/de-en/20180712/"
+      date: 2018-07-12
+      info: "Model built for WMT18 shared task on news translation."
+
+  fa-en:
+    latest: "20180712"
+    "20180712":
+      URL: "http://data.statmt.org/summa/mt/models/fa-en/20180712/"
+      date: 2018-07-12
+      info: ""
+      
