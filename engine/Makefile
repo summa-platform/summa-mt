@@ -57,3 +57,5 @@ engine/bin/eserix:| eserix/srx/rules.srx
 eserix/srx/rules.srx:
 	git submodule update --init eserix
 
+reset-engine-image:
+	-rm -rf engine/bin engine/3rd-party*
