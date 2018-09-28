@@ -4,15 +4,15 @@ SHELL = bash
 MODULE_NAME = summa-mt
 MODULE_VERSION = 1.0.0
 
-all: marian debfile eserix
+all: marian eserix
 
 marian: CMAKE_FLAGS  =-DUSE_STATIC_LIBS=on 
 marian: CMAKE_FLAGS +=-DCMAKE_BUILD_TYPE=Nonative 
 marian: CMAKE_FLAGS +=-DCOMPILE_CUDA=off
 marian: CMAKE_FLAGS +=-DCMAKE_INSTALL_PREFIX=${PWD}/engine
-marian: engine/bin/marian-server
+marian: engine/summa_mt/bin/marian-server
 
-engine/bin/marian-server: marian/build/marian-server
+engine/summa_mt/bin/marian-server: marian/build/marian-server
 	mkdir -p ${@D}
 	cp $(addprefix marian/build/marian-, server decoder scorer) ${@D}
 
@@ -23,14 +23,18 @@ marian/build/marian-server: marian/CMakeLists.txt
 marian/CMakeLists.txt:
 	git submodule update --init marian 
 
+pip_requirements = retry pika requests PyYAML aiohttp aio-pika nltk websocket websocket-client
+
+ifdef DOCKER_BUILDER
+all: debfile
+debfile: engine/3rd-party.deb
 # Installing pip3 on a production image adds about 250MB to the image size.
 # To avoid this overhead, we create a .deb file that installs all packaged that
 # normally would have to be installed through pip3.
 engine/3rd-party.deb: package_name = 3rd-party
 engine/3rd-party.deb: tmpdir = engine/${package_name}
 engine/3rd-party.deb: control = ${tmpdir}/DEBIAN/control
-engine/3rd-party.deb: python_packages  = retry pika requests PyYAML 
-engine/3rd-party.deb: python_packages += aiohttp aio-pika
+engine/3rd-party.deb: python_packages = ${pip_requirements}
 engine/3rd-party.deb:
 	mkdir -p $(dir ${control})
 	pip3 install ${python_packages} --root ${tmpdir}
@@ -42,15 +46,19 @@ engine/3rd-party.deb:
 	echo 'Architecture: amd64' >> ${control}
 	dpkg-deb --build ${tmpdir}
 	rm -rf ${tmpdir}
+else
+all: pip-requirements
+pip-requirements:
+	for r in ${pip_requirements}; do sudo -H pip3 install $$r; done
+endif
 
-debfile: engine/3rd-party.deb
-eserix: engine/bin/eserix engine/srx/rules.srx
+eserix: engine/summa_mt/bin/eserix engine/summa_mt/srx/rules.srx
 
-engine/srx/rules.srx: eserix/srx/rules.srx
+engine/summa_mt/srx/rules.srx: eserix/srx/rules.srx
 	mkdir -p ${@D}
 	cp $< $@
 
-engine/bin/eserix:| eserix/srx/rules.srx
+engine/summa_mt/bin/eserix:| eserix/srx/rules.srx
 	mkdir -p eserix/build && cd eserix/build && cmake .. && make -j
 	cp eserix/build/bin/eserix $@
 
@@ -58,4 +66,4 @@ eserix/srx/rules.srx:
 	git submodule update --init eserix
 
 reset-engine-image:
-	-rm -rf engine/bin engine/3rd-party*
+	-rm -rf engine/summa_mt/bin engine/3rd-party*
