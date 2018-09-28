@@ -4,6 +4,6 @@
 [submodule "submodules/eserix"]
 	path = eserix
 	url = https://github.com/summa-platform/eserix
-[submodule "builder"]
-	path = builder
+[submodule "build-environment"]
+	path = build-environment
 	url = https://github.com/summa-platform/summa-build-environment
