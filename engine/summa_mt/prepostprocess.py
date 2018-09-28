@@ -15,6 +15,8 @@ basedir = os.path.realpath(os.path.dirname(__file__))
 
 class external_call:
     def __init__(self,cmd):
+        if not cmd.startswith('/'):
+            cmd = "%s/%s"%(basedir, cmd)
         self.cmd = cmd.split()
         return
     def __call__(self,line):
@@ -23,11 +25,12 @@ class external_call:
         return out.decode('utf8')
 
 class BPE_Wrapper:
-    def __init__(self,config):
+    def __init__(self,model_root,config):
         assert 'codes' in config
-        codes = codecs.open(config['codes'], encoding='utf8')
+        path = "%s/%%s"%model_root
+        codes = codecs.open(path%config['codes'], encoding='utf8')
         if 'vocabulary' in config:
-            vfile = codecs.open(config['vocabulary'], encoding='utf8')
+            vfile = codecs.open(path%config['vocabulary'], encoding='utf8')
             vthresh = int(config['vocabulary-threshold'])
             vocab = apply_bpe.read_vocabulary(vfile,vthresh)
         else: vocab = None
@@ -74,7 +77,7 @@ class RegexRule:
         return self.pattern.sub(self.replacement,line)
     
 class Step:
-    def __init__(self,config):
+    def __init__(self, model_path, config):
         self.name = config['action']
         self.external = False
         
@@ -87,14 +90,14 @@ class Step:
             self.action = lambda x: unicodedata.normalize(form, x)
 
         elif 'truecase' == self.name:
-            self.action = Truecaser(config['model'])
+            self.action = Truecaser("%s/%s"%(model_path,config['model']))
 
         elif 'split_sentences' == self.name:
             maxlen = config['max-sentence-length']
             self.action = SentenceSplitter(config['language'],maxlen)
 
         elif 'bpe' == self.name:
-            self.action = BPE_Wrapper(config)
+            self.action = BPE_Wrapper(model_path, config)
 
         elif 'de-bpe' == self.name:
             pattern = config.get('pattern',r'@@(?: +|$)')
@@ -126,10 +129,11 @@ class Step:
         return [line.strip() for line in result]
     
 class PrePostProcessor:
-    def __init__(self,config):
+    def __init__(self, config, root = None):
+        self.root = root if root else os.path.dirname(config)
         if type(config).__name__ == "str":
             config = yaml.load(open(config))
-        self.steps = [Step(s) for s in config['steps']]
+        self.steps = [Step(self.root, s) for s in config['steps']]
         return
     
     def __call__(self,text):
@@ -138,8 +142,9 @@ class PrePostProcessor:
     pass # end of class definition
 
 if __name__ == "__main__":
-    config = yaml.load(open(sys.argv[1]).read())
-    process = PrePostProcessor(config)    
+    cfile = sys.argv[1]
+    config = yaml.load(open(cfile).read())
+    process = PrePostProcessor(os.path.dirname(cfile), config)
     for line in sys.stdin:
         line = line.strip()
         result = process(line) if len(line) else ""
