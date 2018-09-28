@@ -11,6 +11,20 @@ from argparse import ArgumentParser
 from subprocess import Popen, PIPE
 
 logger = logging.getLogger(__name__)
+basedir  = os.path.dirname(__file__)
+
+# find the marian executable
+marian = None
+for guess in [os.environ.get('MARIAN_SERVER_EXE',None),
+              "%s/bin/marian-server"%basedir,
+              "/usr/bin/marian-server"]:
+    if guess and os.path.exists(guess):
+        marian = guess
+        break
+    pass
+if not marian:
+    raise Exception("Cannot find marian server executable.")
+
 class MarianServer:
     def __init__(self,config):
         self.config = config
@@ -18,7 +32,7 @@ class MarianServer:
         return
 
     def start(self,loglevel='critical'):
-        marian = os.environ['MARIAN_SERVER_EXE']
+        # marian = os.environ.get('MARIAN_SERVER_EXE',
         cmd = [marian, "-c", self.config, "--log-level", loglevel]
         self.marian = Popen(cmd)
         return
@@ -147,6 +161,7 @@ if __name__ == "__main__":
     translate = Translator(opts.model)
     try:
         for line in sys.stdin:
+            logger.info("IN: %s"%line)
             if line.strip() == '': print()
             else:
                 translation = translate(line)
