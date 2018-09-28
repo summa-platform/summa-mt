@@ -45,7 +45,7 @@ sudo apt-get update
 sudo apt-get install intel-mkl-64bit-2018.2-046
 
 # install other dependencies
-sudo apt-get install -y autoconf automake cmake g++ libssl-dev libtool libboost-all-dev libgoogle-perftools-dev libpcre3-dev unzip wget 
+sudo apt-get install -y autoconf automake cmake g++ libssl-dev libtool libboost-all-dev libgoogle-perftools-dev libpcre3-dev nltk unzip wget 
 ```
 
 ## Build software
