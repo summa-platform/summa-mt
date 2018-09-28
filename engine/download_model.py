@@ -36,7 +36,7 @@ def download_model(session,url,dest):
             for f in info['files']]
     for j in asyncio.as_completed(jobs):
         f,success = yield from j
-        print(f,success)
+        print(f,"OK" if success else "FAIL")
         pass
     return
 
@@ -59,10 +59,10 @@ def get_url_and_dest(opts):
     return info['URL'], path
 
 def main(opts):
-    try: os.makedirs(opts.dest)
-    except: pass
     url, dest = get_url_and_dest(opts)
     print(url,dest)
+    try: os.makedirs(dest)
+    except: pass
 
     base_url = regex.sub(r'(/(model_info\.yaml)?)?$','', url)
     with closing(asyncio.get_event_loop()) as loop:
