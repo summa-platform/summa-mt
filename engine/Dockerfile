@@ -1,22 +1,29 @@
-# Uncomment the lines below to build the components in a Docker image.
-# If possible, I recommend building on the host and copying from there.
-FROM summaplatform/mt-builder as builder
+# Set BUILDER_IMAGE to summaplatform/build-environment below if you
+# want to build within docker; otherwise, set it to ubuntu:16.04.
+
+ARG DOCKER_BUILDER=summaplatform/build-environment
+ARG BUILDER_IMAGE=ubuntu:16.04
 ARG MARIAN_VERSION=master
 ARG ESERIX_VERSION=master
+ENV DOCKER_BUILDER=${DOCKER_BUILDER}
+
+FROM ${BUILDER_IMAGE} as builder
 COPY Makefile .
-RUN git clone http://github.com/marian-nmt/marian \
-    && cd marian && git checkout ${MARIAN_VERSION} && cd - \
-    && make marian
 
-RUN git clone http://github.com/summa-platform/eserix \
+RUN [[ "${BUILDER_IMAGE}" == "${DOCKER_BUILDER}" ]] \
+    && git clone http://github.com/summa-platform/eserix \
     && cd eserix && git checkout ${ESERIX_VERSION} && cd - \
-    && make eserix
-
-RUN make
-RUN find engine
+    && git clone http://github.com/marian-nmt/marian \
+    && cd marian && git checkout ${MARIAN_VERSION} && cd - \
+    && make 
     
 FROM ubuntu:16.04
 LABEL maintainer="Ulrich Germann <ugermann@inf.ed.ac.uk>"
+
+ENV LANG C.UTF-8
+ENV PYTHONUNBUFFERED y
+ENV MARIAN_SERVER_EXE
+
 RUN apt-get update 
 RUN apt-get install -y libtcmalloc-minimal4 
 RUN apt-get install -y python3-regex 
