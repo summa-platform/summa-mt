@@ -1,9 +1,0 @@
-[submodule "submodules/marian"]
-	path = marian
-	url = https://github.com/marian-nmt/marian
-[submodule "submodules/eserix"]
-	path = eserix
-	url = https://github.com/summa-platform/eserix
-[submodule "build-environment"]
-	path = build-environment
-	url = https://github.com/summa-platform/summa-build-environment
