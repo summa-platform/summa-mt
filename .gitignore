@@ -8,3 +8,6 @@ engine/3rd-party.deb
 engine/bin
 engine/summa_mt/bin
 engine/summa_mt/srx
+eserix/
+marian/
+build/
