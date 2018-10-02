@@ -1,21 +1,15 @@
 # Set BUILDER_IMAGE to summaplatform/build-environment below if you
 # want to build within docker; otherwise, set it to ubuntu:16.04.
-
-ARG DOCKER_BUILDER=summaplatform/build-environment
-ARG BUILDER_IMAGE=ubuntu:16.04
-ARG MARIAN_VERSION=master
-ARG ESERIX_VERSION=master
-ENV DOCKER_BUILDER=${DOCKER_BUILDER}
-
+ARG BUILDER_IMAGE=summaplatform/mt-build-environment
 FROM ${BUILDER_IMAGE} as builder
+WORKDIR /opt/app
 COPY Makefile .
+COPY make .
 
-RUN [[ "${BUILDER_IMAGE}" == "${DOCKER_BUILDER}" ]] \
-    && git clone http://github.com/summa-platform/eserix \
-    && cd eserix && git checkout ${ESERIX_VERSION} && cd - \
-    && git clone http://github.com/marian-nmt/marian \
-    && cd marian && git checkout ${MARIAN_VERSION} && cd - \
-    && make 
+# run make only if we are building on Docker
+RUN mkdir -p engine
+RUN [[ ${BUILDER_IMAGE} == "summaplatform/mt-build-environment" ]] \
+    && make engine
     
 FROM ubuntu:16.04
 LABEL maintainer="Ulrich Germann <ugermann@inf.ed.ac.uk>"
