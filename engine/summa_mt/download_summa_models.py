@@ -9,7 +9,7 @@ import logging
 
 MODEL_BASE_URL = os.environ.get('MODEL_BASE_URL', 'http://data.statmt.org/summa/mt/models/')
 MODEL_URL = os.environ.get('MODEL_URL', os.path.join(MODEL_BASE_URL, '{source}-{target}/{model}/{filename}'))
-MODEL_INFO_FILE = "model_info.yaml"
+MODEL_INFO_FILE = "model_info.yml"
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s: %(levelname)s:  %(message)s')
@@ -26,7 +26,7 @@ def get_last_model_info(src, trg):
         trg (str): target language (ISO 639-1 format)
 
     Returns:
-        string: content of model_info.yaml file.
+        string: content of model_info.yml file.
     """
     requested_model = os.environ['MARIAN_MODEL']
     model_info_url = MODEL_URL.format(source=src, target=trg, model=requested_model, filename=MODEL_INFO_FILE)

@@ -116,6 +116,10 @@ class Translator:
         # eventually it should be an optional specification of
         # host, port, and protocol of a connection to a marian service
         # (http(s), ws, amqp, etc.)
+        self.model_info = yaml.load(open(model_dir+"/model_info.yml"))
+        self.srclang = self.model_info['source-language']
+        self.trglang = self.model_info['target-language']
+        
         self.preprocess  = PrePostProcessor(model_dir+"/preprocess.yml")
         self.postprocess = PrePostProcessor(model_dir+"/postprocess.yml")
         if not marian:
