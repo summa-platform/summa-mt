@@ -1,8 +1,9 @@
 FROM ubuntu:16.04
 MAINTAINER Ulrich Germann <ugermann@inf.ed.ac.uk>
+ARG GITHASH=MISSING
+
 # This is a docker containing the infrastructure required for building
 # or repackaging the components necessary to run the MT service.
-
 
 # Intel MKL is so expensive to install that we install it as on one of the first
 # Docker layers
@@ -33,3 +34,4 @@ RUN apt-get install -y \
 
 ADD . .
 RUN rm -rf /var/lib/apt/lists/*
+LABEL GITHASH=${GITHASH}
