@@ -15,15 +15,21 @@ logger = logging.getLogger(__name__)
 basedir  = os.path.dirname(__file__)
 
 ESERIX_RULES = None
-for guess in [os.environ.get('ESERIX_RULES', "%s/srx/rules.srx"%basedir)]:
+guesses = [os.environ.get('ESERIX_RULES',
+                          "%s/srx/rules.srx"%basedir),
+           "%s/srx/rules.srx"%os.path.dirname(basedir)]
+
+for guess in guesses:
     if guess and os.path.exists(guess):
         ESERIX_RULES = guess
         break
     else:
-        print("No luck:",guess)
+        logger.info("No Eserix rules found at %s:"%guess)
     pass
+
 if not ESERIX_RULES:
-    raise Exception("Cannot find Eserix rules!")
+    raise Exception("Cannot find Eserix rules within [%s]!"\
+                    %(", ".join(guesses)))
 
 ESERIX_CMD = None
 for guess in [os.environ.get('ESERIX_CMD', '%s/bin/eserix'%basedir)]:
