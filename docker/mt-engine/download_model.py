@@ -102,7 +102,12 @@ def main(opts):
             if os.path.getsize(f):
                 subprocess.call(['tar','xvzf',f])
                 # leave empty file to prevent downloading again:
-                open(f,'w').close() 
+                open(f,'w').close()
+        elif f.endswith(".gz"):
+            if os.path.getsize(f):
+                subprocess.call(['gzip', '-d', f])
+                # leave empty file to prevent downloading again:
+                open(f,'w').close()
         elif f.endswith('.zip'):
             if os.path.getsize(f):
                 subprocess.call(['unzip',f])

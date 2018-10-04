@@ -20,7 +20,8 @@ def setup_argparser_common(p):
                    'RabbitMQ client (or set env variable STARTUP_DELAY)')
 
     p.add_argument('--response-exchange', type=str,
-                   default=os.environ.get('RESPONSE_EXCHANGE',''),
+                   default=os.environ.get('EXCHANGE_OUT',
+                                          os.environ.get('RESPONSE_EXCHANGE','')),
                    help='exchange for responses (or set env variable RESPONSE_EXCHANGE)')
 
     p.add_argument('--request-exchange', type=str,
@@ -28,11 +29,14 @@ def setup_argparser_common(p):
                    help='exchange for requests (or set env variable REQUEST_EXCHANGE)')
 
     p.add_argument('--request-queue', '-Q', type=str,
-                   default=os.environ.get('REQUEST_QUEUE','requests'),
+                   default=os.environ.get('QUEUE_IN',
+                                          os.environ.get('REQUEST_QUEUE','requests')),
                    help='request queue (or set env variable REQUEST_QUEUE)')
     
     p.add_argument('--broker',dest='url', type=str,
-                   default=os.environ.get('MESSAGE_BROKER_URL','ampq://localhost:5672'),
+                   default=os.environ.get('RABBITMQ_URL',
+                                          os.environ.get('MESSAGE_BROKER_URL',
+                                                         'amqp://localhost:5672')),
                    help='AMQP Broker URL (or set env variable MESSAGE_BROKER_URL)')
 
     p.add_argument("-v", "--verbose", nargs='?', const='INFO', default='WARN',

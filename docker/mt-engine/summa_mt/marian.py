@@ -4,7 +4,7 @@
 # - check if marian is already running
 # - allow connection to remote marian server
 
-import regex, time, sys, os, logging, yaml
+import regex, time, sys, os, logging, yaml, multiprocessing
 from prepostprocess import PrePostProcessor
 from websocket import create_connection
 from argparse import ArgumentParser
@@ -33,7 +33,8 @@ class MarianServer:
 
     def start(self,loglevel='critical'):
         # marian = os.environ.get('MARIAN_SERVER_EXE',
-        cmd = [marian, "-c", self.config, "--log-level", loglevel]
+        cmd = [ marian, "-c", self.config, "--log-level", loglevel,
+                "--cpu-threads", "4" ] # "%d"%multiprocessing.cpu_count() ]
         self.marian = Popen(cmd)
         return
     
@@ -73,8 +74,8 @@ class MarianClient:
             return None
         
     def reconnect(self):
-        max_tries  = 60
-        sleep_time = 1
+        max_tries  = 720
+        sleep_time = 5
         for attempt in range(max_tries):
             try:
                 self.conn = self.connect()
@@ -145,8 +146,12 @@ class Translator:
             pass
         return
     
-    def __call__(self,paragraph):
-        sentences = self.preprocess(paragraph)
+    def __call__(self,text):
+        if type(text).__name__ == 'str':
+            sentences = self.preprocess(text)
+        elif type(text).__name__ == 'list':
+            sentences = [s for chunk in text for s in self.preprocess(chunk)]
+            pass
         translation = self.marian_client.translate("\n".join(sentences))
         postprocessed = self.postprocess(translation.strip().split('\n'))
         return postprocessed
@@ -156,7 +161,8 @@ class Translator:
 def parse_arguments(args=sys.argv[1:]):
     p = ArgumentParser()
     p.add_argument("-v", "--verbose", const='INFO', default='WARN',nargs='?')
-    p.add_argument("-m", "--model", help="path to model directory")
+    p.add_argument("-m", "--model", default=os.environ.get('MT_MODEL_PATH','/model'),
+                   help="path to model directory")
     return p.parse_args()
     
 if __name__ == "__main__":

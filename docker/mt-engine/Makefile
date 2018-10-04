@@ -5,7 +5,7 @@ include ${mydir}/make/marian.make
 include ${mydir}/make/eserix.make
 include ${mydir}/make/pip-packages.make
 
-INSTALL_PREFIX=${PWD}/engine
+INSTALL_PREFIX=${PWD}/engine/summa_mt
 
 engine: $(addprefix ${INSTALL_PREFIX}/bin/marian-,server decoder scorer)
 engine: ${INSTALL_PREFIX}/bin/eserix
