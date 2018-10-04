@@ -76,12 +76,15 @@ class NLTK_SentenceSplitter:
 class SimpleSentenceSplitter:
     
     def __init__(self,language):
-        self.sentpat = re.compile(r'.*?(?:[.!?][\p{Pf}\p{Pe}]*|$)')
+        self.sentpat = regex.compile(r'.*?(?:[.!?][\p{Pf}\p{Pe}]*|$)')
         pass
 
     def __call__(self,text):
-        text = re.sub(r'\s+',' ',text.decode('utf8')).strip()
-        return [x.group(0).strip() for x in sentpat.finditer(text)
+        if not type(text).__name__ == 'str':
+            text = text.decode('utf8')
+        text = regex.sub(r'\s+',' ',text).strip()
+        return [x.group(0).strip()
+                for x in self.sentpat.finditer(text)
                 if len(x.group(0))]
     pass
     

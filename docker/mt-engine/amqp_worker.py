@@ -24,10 +24,9 @@ def parse_args():
 if __name__ == "__main__":
     opts = parse_args()
     logging.basicConfig(level=opts.verbose,format="%(levelname)s %(message)s")
-
     retry_delay = int(getattr(opts,'retry_delay','5'))
     startup_delay = int(getattr(opts,'startup_delay','0'))
-    
+
     on_message = MessageHandler(opts)
     
     # the @retry decoration makes python retry if the

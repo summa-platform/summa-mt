@@ -1,7 +1,7 @@
 FROM ubuntu:16.04
 MAINTAINER Ulrich Germann <ugermann@inf.ed.ac.uk>
-ARG GITHASH=MISSING
-
+ARG GITHASH
+ENV IMAGE_GITHASH=${GITHASH}
 # This is a docker containing the infrastructure required for building
 # or repackaging the components necessary to run the MT service.
 

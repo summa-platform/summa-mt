@@ -49,7 +49,7 @@ class PunctFix:
         self.pattern = regex.compile(r'(\s)([.!?](?:\s*&quot;)?)\s*(\w+)', regex.U)
         return
 
-    def fix(m):
+    def fix(self, m):
         """
         replace ' .new-sentence' with '. Nextsent'
             and ' ." new-sentence' with '. " Nextsent'
