@@ -1,0 +1,29 @@
+version: "3.3"
+services:
+  build-environment:
+    image: summaplatform/mt-build-environment
+    build:
+      context: ../build-environment
+      args:
+        GITHASH: ${GITHASH}
+  basic-engine:
+    image: summaplatform/mt-basic-engine
+    build:
+      context: ../basic-engine
+      args:
+        GITHASH: ${GITHASH}
+  engine:
+    image: summaplatform/mt-engine
+    build:
+      context: ../build-environment
+      args:
+        GITHASH: ${GITHASH}
+
+  model-${LPAIR}:
+    image: summaplatfor/mt-model-${LPAIR}
+    build:
+      context: ../model-image
+      args:
+        LPAIR: ${LPAIR}
+        GITHASH: ${GITHASH}
+        
