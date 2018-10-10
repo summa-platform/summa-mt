@@ -7,14 +7,15 @@
 # respective repository is at the time.
 
 MARIAN_COMMIT=master
-MARIAN_REPO_ROOT=${PWD}/marian
-MARIAN_BUILD_DIR=${PWD}/build/marian
+MARIAN_REPO_ROOT=${PWD}/marian-dev
+MARIAN_BUILD_DIR=${PWD}/build/marian-dev
 MARIAN_GITHUB_URL=http://github.com/marian-nmt/marian.git
 
 .PHONY: marian
 marian: CMAKE_FLAGS  =-DUSE_STATIC_LIBS=on 
-marian: CMAKE_FLAGS +=-DCMAKE_BUILD_TYPE=Nonative 
 marian: CMAKE_FLAGS +=-DCOMPILE_CUDA=off
+marian: CMAKE_FLAGS +=-DCMAKE_BUILD_TYPE=Nonative 
+marian: CMAKE_FLAGS +=-DCMAKE_VERBOSE_MAKEFILE=on
 marian: CMAKE_FLAGS +=-DCMAKE_INSTALL_PREFIX=${PWD}/engine
 marian: ${MARIAN_BUILD_DIR}/marian-server
 
