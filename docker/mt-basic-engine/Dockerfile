@@ -1,4 +1,4 @@
-FROM summaplatform/marian-compiled as marian
+FROM summaplatform/mt-marian-compiled as marian
 FROM ubuntu:16.04
 WORKDIR /opt/app/engine
 COPY --from=marian /opt/app/engine .
