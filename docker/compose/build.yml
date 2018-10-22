@@ -2,39 +2,44 @@ version: "3.3"
 services:
 
   mt-build-environment:
-    image: summaplatform/mt-build-environment
+    image: ${TARGET_IMAGE}
     build:
       context: ../mt-build-environment
       args:
+        BASE_IMAGE: ${BASE_IMAGE}
         GITHASH: ${GITHASH}
 
   mt-marian-compiled:
-    image: summaplatform/mt-marian-compiled
+    image: ${TARGET_IMAGE}
     build:
       context: ../mt-marian-compiled
       args:
+        BASE_IMAGE: ${BASE_IMAGE}
         GITHASH: ${GITHASH}
 
   mt-basic-engine:
-    image: summaplatform/mt-basic-engine
+    image: ${TARGET_IMAGE}
     build:
       context: ../mt-basic-engine
       args:
+        BASE_IMAGE: ${BASE_IMAGE}
         GITHASH: ${GITHASH}
-
+        
   mt-engine:
-    image: summaplatform/mt-engine
+    image: ${TARGET_IMAGE}
     build:
       context: ../mt-engine
       args:
+        BASE_IMAGE: ${BASE_IMAGE}
         GITHASH: ${GITHASH}
 
-  mt-engine-fa-en:
-    image: summaplatform/mt-engine-fa-en:${MT_MODEL_VERSION}
+  mt-engine-with-model:
+    image: ${TARGET_IMAGE}
     build:
       context: ../mt-engine-with-model
       args:
-        MODEL_IMAGE: summaplatform/mt-model-fa-en:${MT_MODEL_VERSION}
-        SRCLANG: fa
-        TRGLANG: en
+        BASE_IMAGE: ${BASE_IMAGE}
+        MODEL_IMAGE: ${MODEL_IMAGE}
+        SRCLANG: ${SRCLANG}
+        TRGLANG: ${TRGLANG}
         MT_MODEL_PATH: /model

@@ -1,8 +1,7 @@
-# ARG MODEL_IMAGE=summaplatform/mt-model-fa-en:20180712
-# FROM ${MODEL_IMAGE} as model
-
-FROM summaplatform/mt-model-fa-en:20180712 as model
-FROM summaplatform/mt-engine
+ARG MODEL_IMAGE
+ARG BASE_IMAGE
+FROM ${MODEL_IMAGE} as model
+FROM ${BASE_IMAGE}
 ARG MT_MODEL_PATH=/model
 COPY --from=model /model ${MT_MODEL_PATH}
 

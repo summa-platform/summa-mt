@@ -21,7 +21,10 @@ marian: ${MARIAN_BUILD_DIR}/marian-server
 
 ${MARIAN_BUILD_DIR}/marian-server: ${MARIAN_REPO_ROOT}/CMakeLists.txt
 	mkdir -p ${@D}
-	cd ${@D} && cmake ${CMAKE_FLAGS} ${MARIAN_REPO_ROOT} && make -j
+	cd ${@D} && cmake ${CMAKE_FLAGS} ${MARIAN_REPO_ROOT} \
+	&& find -name Makefile
+#| xargs sed -i 's/-march=native/-march=x86-64/g' {} 
+#	&& make -j
 
 ${MARIAN_REPO_ROOT}/CMakeLists.txt:
 	mkdir -p $(dir ${@D})
