@@ -84,7 +84,7 @@ image/mt-engine-$1-$2:
 
 endef
 
-$(eval $(call build_engine_with_model,fa,en,20180712))
+$(eval $(call build_engine_with_model,fa,en,20181017))
 $(eval $(call build_engine_with_model,pt,en,20180622))
 
 
