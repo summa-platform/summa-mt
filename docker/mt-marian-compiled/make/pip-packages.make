@@ -20,6 +20,7 @@ engine/3rd-party.deb: control = ${tmpdir}/DEBIAN/control
 engine/3rd-party.deb: python_packages = ${pip_requirements}
 engine/3rd-party.deb:
 	mkdir -p $(dir ${control})
+	pip3 install --upgrade pip
 	pip3 install ${python_packages} --root ${tmpdir}
 	for f in $$(find ${tmpdir} -name '*.so'); do strip -S $$f; done 
 	echo "Package: summa-mt-pip" > ${control}

@@ -1,9 +1,8 @@
-FROM summaplatform/mt-marian-compiled as marian
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE} as marian
 FROM ubuntu:16.04
 WORKDIR /opt/app/engine
-COPY --from=marian /opt/app/engine .
 ARG GITHASH
-RUN dpkg -i 3rd-party.deb && rm 3rd-party.deb 
 RUN apt-get update \
     && apt-get install -y \
        libtcmalloc-minimal4 \
@@ -12,7 +11,10 @@ RUN apt-get update \
        python3-regex \
        python3-yaml \
        python3-websocket \
-       libpcrecpp0v5 \
+       libpcrecpp0v5
+
+COPY --from=marian /opt/app/engine .
+RUN dpkg -i 3rd-party.deb && rm 3rd-party.deb \
     && ldd summa_mt/bin/eserix \
        | awk '/not found/ { print $1 }' \
        | sed 's/\.so\.//;s/_/-/g'\

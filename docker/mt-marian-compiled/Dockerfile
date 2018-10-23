@@ -1,5 +1,5 @@
-ARG BUILD_ENVIRONMENT=summaplatform/mt-build-environment
-FROM ${BUILD_ENVIRONMENT} as builder
+ARG BASE_IMAGE=summaplatform/mt-build-environment
+FROM ${BASE_IMAGE} as builder
 WORKDIR /opt/app
 COPY . .
 ARG GITHASH

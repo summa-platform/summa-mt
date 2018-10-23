@@ -1,7 +1,7 @@
 # Set BUILDER_IMAGE to summaplatform/build-environment below if you
 # want to build within docker; otherwise, set it to ubuntu:16.04.
-ARG MARIAN_IMAGE
-FROM ${MARIAN_IMAGE}
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
 ARG GITHASH
 LABEL maintainer="Ulrich Germann <ugermann@inf.ed.ac.uk>"
 LABEL GITHASH=${GITHASH}
