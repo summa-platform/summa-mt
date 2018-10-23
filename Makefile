@@ -51,19 +51,19 @@ image/mt-marian-compiled:
 	BASE_IMAGE=${BUILD_ENVIRONMENT} \
 	TARGET_IMAGE=${MARIAN_BUILDER} \
 	docker-compose -f docker/compose/build.yml build \
-	${EXTRA_BUILD_OPTIONS} ${@F}
+	${EXTRA_BUILD_OPTIONS} --no-cache ${@F}
 
 image/mt-basic-engine: 
 	BASE_IMAGE=${MARIAN_BUILDER} \
 	TARGET_IMAGE=${MARIAN_IMAGE} \
 	docker-compose -f docker/compose/build.yml build \
-	${EXTRA_BUILD_OPTIONS} ${@F}
+	${EXTRA_BUILD_OPTIONS} --no-cache ${@F}
 
 image/mt-engine: # image/mt-basic-engine
 	BASE_IMAGE=${MARIAN_IMAGE} \
 	TARGET_IMAGE=${MT_ENGINE_IMAGE} \
 	docker-compose -f docker/compose/build.yml build \
-	${EXTRA_BUILD_OPTIONS} ${@F}
+	${EXTRA_BUILD_OPTIONS} --no-cache ${@F}
 
 define build_engine_with_model
 
@@ -85,6 +85,7 @@ image/mt-engine-$1-$2:
 endef
 
 $(eval $(call build_engine_with_model,fa,en,20180712))
+$(eval $(call build_engine_with_model,pt,en,20180622))
 
 
 # NOTE: to build and tag model containers, cd into the respective model directory,
