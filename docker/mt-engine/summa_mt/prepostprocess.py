@@ -137,14 +137,33 @@ class PrePostProcessor:
         return
     
     def __call__(self,text):
-        for step in self.steps: text = step(text)
+        if __name__ == "__main__":
+            logger.debug("INPUT\n%s\n"%text)
+        for step in self.steps:
+            text = step(text)
+            if __name__ == "__main__":
+                logger.debug(step.name)
+                if type(text).__name__ == "list":
+                    for t in text:
+                        logger.debug(t)
+                    else: logger.debug(text)
+                logger.debug("")
+                pass
         return text 
     pass # end of class definition
 
 if __name__ == "__main__":
-    cfile = sys.argv[1]
-    config = yaml.load(open(cfile).read())
-    process = PrePostProcessor(os.path.dirname(cfile), config)
+
+    from argparse import ArgumentParser
+    def parse_arguments(args=sys.argv[1:]):
+        p = ArgumentParser()
+        p.add_argument("-v", "--verbose", const='INFO', default='WARN',nargs='?')
+        p.add_argument("config", help="path to config file")
+        return p.parse_args()
+    
+    opts = parse_arguments()
+    logging.basicConfig(level=opts.verbose,format="%(levelname)s %(message)s")
+    process = PrePostProcessor(opts.config)
     for line in sys.stdin:
         line = line.strip()
         result = process(line) if len(line) else ""
