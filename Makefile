@@ -19,7 +19,7 @@ info:
 	@echo "  combine mt-engine with model image into an all-in-one container"
 
 # for local install (coming soon):
-# include ${mydir}/docker/mt-marian-compiled/Makefile
+include ${mydir}/docker/mt-marian-compiled/Makefile
 
 .PHONY: local
 local:
@@ -40,6 +40,20 @@ MT_ENGINE_IMAGE   = ${REGISTRY}/mt-engine
 # line below (instead of exporting them via the gmake export command),
 # so that the settings are visible in the make log and when running
 # make -n
+
+define softlink_engine_resource
+
+engine: engine/$1
+engine/$1: ${PWD}/docker/mt-engine/$1
+	mkdir -p $${@D}
+	cp ${PWD}/docker/mt-engine/$1 $${@D}
+
+endef
+
+ENGINE_SCRIPTS = $(subst ./,,$(shell cd docker/mt-engine && find -type f))
+
+$(foreach f,${ENGINE_SCRIPTS},\
+$(eval $(call softlink_engine_resource,$f)))
 
 image/mt-build-environment:
 	BASE_IMAGE=ubuntu:16.04 \
