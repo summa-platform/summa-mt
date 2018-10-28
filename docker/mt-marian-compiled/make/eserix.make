@@ -16,11 +16,11 @@ eserix: ${ESERIX_BUILD_DIR}/bin/eserix
 
 ${ESERIX_REPO_ROOT}/srx/rules.srx:
 	mkdir -p ${pdir}
-	[ -d ${@D} ] || git clone ${ESERIX_GITHUB_URL} ${@D} 
+	[ -d ${ESERIX_REPO_ROOT} ] || git clone ${ESERIX_GITHUB_URL} ${ESERIX_REPO_ROOT}
 
 ${ESERIX_BUILD_DIR}/bin/eserix: ${ESERIX_REPO_ROOT}/srx/rules.srx
-	rm -r ${ESERIX_BUILD_DIR}
 	mkdir -p ${ESERIX_BUILD_DIR}
+	rm -rf ${ESERIX_BUILD_DIR}/*
 	cd ${ESERIX_BUILD_DIR} && cmake ${ESERIX_REPO_ROOT} && make -j
 
 ${INSTALL_PREFIX}/bin/eserix: ${ESERIX_BUILD_DIR}/bin/eserix

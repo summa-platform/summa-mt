@@ -20,7 +20,7 @@ marian: CMAKE_FLAGS +=-DCMAKE_INSTALL_PREFIX=${PWD}/engine
 marian: ${MARIAN_BUILD_DIR}/marian-server
 
 ${MARIAN_BUILD_DIR}/marian-server: ${MARIAN_REPO_ROOT}/CMakeLists.txt
-	rm -r ${@D}
+	-rm -r ${@D}
 	mkdir -p ${@D}
 	cd ${@D} && cmake ${CMAKE_FLAGS} ${MARIAN_REPO_ROOT} && make -j
 
