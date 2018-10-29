@@ -141,7 +141,7 @@ class AMQP_Worker(object):
         logger.info('Adding channel close callback')
         self._channel.add_on_close_callback(self.on_channel_closed)
 
-    def on_channel_closed(self, channel, code, reason):
+    def on_channel_closed(self, channel, reason):
         """Invoked by pika when RabbitMQ unexpectedly closes the channel.
         Channels are usually closed if you attempt to do something that
         violates the protocol, such as re-declare an exchange or queue with
@@ -243,8 +243,8 @@ class AMQP_Worker(object):
         logger.info('Issuing consumer related RPC commands')
         self.add_on_cancel_callback()
         self._consumer_tag = self._channel.basic_consume\
-                             (queue=self._queue,
-                              consumer_callback = self.on_message)
+                             (on_message_callback=self.on_message,
+                              queue=self._queue)
 
     def add_on_cancel_callback(self):
         """Add a callback that will be invoked if RabbitMQ cancels the consumer
