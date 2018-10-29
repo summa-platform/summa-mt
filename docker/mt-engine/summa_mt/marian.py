@@ -34,8 +34,13 @@ def setup_argparser(ap):
     safe_add_arg(ap, '--marian_port', "-P",
                  default=os.environ.get('MARIAN_SERVER_PORT','8080'),
                  help="port number for the Marian Server")
-    safe_add_arg(ap, "--cpu-threads", default=multiprocessing.cpu_count(),
-                 type=int,help="Number of threads Marian should use.")
+    safe_add_arg(ap, "--cpu-threads", type=int,
+                 help="Number of threads Marian should use."
+                 default=os.environ.get('MARIAN_CPU_THREADS',
+                                        multiprocessing.cpu_count()))
+    safe_add_arg(ap, "--beam-size", type=int,
+                 default=os.environ.get('MARIAN_BEAM_SIZE',0),
+                 help="Beam size for translation.")
     return
 
 
@@ -57,10 +62,11 @@ class MarianServer:
         self.marian = None
         return
     
-    def start(self,loglevel='critical',cpu_threads=multiprocessing.cpu_count()):
+    def start(self,loglevel='critical',cpu_threads=multiprocessing.cpu_count(), beam=0):
         # marian = os.environ.get('MARIAN_SERVER_EXE',
         cmd = [ marian, "-c", self.config, "--log-level", loglevel,
-                "--cpu-threads", "%d"%cpu_threads ] 
+                "--cpu-threads", "%d"%cpu_threads ]
+        if beam: cmd.extend(["--beam-size","%d"%beam])
         logger.info("Invoking marian server as: %s"%(' '.join(cmd)))
         self.marian = Popen(cmd)
         return
@@ -143,6 +149,8 @@ class Translator:
         model_dir = getattr(options,'model','model')
         self.cpu_threads = getattr(options,'cpu_threads',
                                    multiprocessing.cpu_count())
+        self.beam_size = getattr(options,'beam_size',
+                                 os.environ.get('MARIAN_BEAM_SIZE',0))
         # marian should None for the time being
         # eventually it should be an optional specification of
         # host, port, and protocol of a connection to a marian service
@@ -166,7 +174,10 @@ class Translator:
         return
                     
     def start(self):
-        if self.marian_server: self.marian_server.start(cpu_threads=self.cpu_threads)
+        if self.marian_server:
+            self.marian_server.start(cpu_threads=self.cpu_threads,
+                                     beam=self.beam_size)
+            pass
         self.marian_client.reconnect()
         return
 
