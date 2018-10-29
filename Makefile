@@ -2,7 +2,10 @@
 SHELL = bash
 mydir:=$(dir $(lastword ${MAKEFILE_LIST}))
 INSTALL_PREFIX=${PWD}/engine
-all: info
+
+$(foreach s,fa pt,$(foreach t,en,\
+$(eval all: image/mt-engine-$s-$t)))
+
 info:
 	@echo
 	@echo "HOW TO BUILD IMAGES (execute in this order)"
@@ -41,7 +44,7 @@ MT_ENGINE_IMAGE   = ${REGISTRY}/mt-engine
 # so that the settings are visible in the make log and when running
 # make -n
 
-define softlink_engine_resource
+define copy_engine_script
 
 engine: engine/$1
 engine/$1: ${PWD}/docker/mt-engine/$1
@@ -53,7 +56,22 @@ endef
 ENGINE_SCRIPTS = $(subst ./,,$(shell cd docker/mt-engine && find -type f))
 
 $(foreach f,${ENGINE_SCRIPTS},\
-$(eval $(call softlink_engine_resource,$f)))
+$(eval $(call copy_engine_script,$f)))
+
+ifeq (${from},scratch)
+image/mt-marian-compiled: image/mt-build-environment
+image/mt-basic-engine: image/mt-marian-compiled
+image/mt-engine: image/mt-basic-engine
+endif
+
+ifeq (${from},marian-compiled)
+image/mt-basic-engine: image/mt-marian-compiled
+image/mt-engine: image/mt-basic-engine
+endif
+
+ifeq (${from},basic-engine)
+image/mt-engine: image/mt-basic-engine
+endif
 
 image/mt-build-environment:
 	BASE_IMAGE=ubuntu:16.04 \
@@ -73,7 +91,7 @@ image/mt-basic-engine:
 	docker-compose -f docker/compose/build.yml build \
 	${EXTRA_BUILD_OPTIONS} --no-cache ${@F}
 
-image/mt-engine: # image/mt-basic-engine
+image/mt-engine: 
 	BASE_IMAGE=${MARIAN_IMAGE} \
 	TARGET_IMAGE=${MT_ENGINE_IMAGE} \
 	docker-compose -f docker/compose/build.yml build \
@@ -86,7 +104,7 @@ image/mt-model-$1-$2:
 	&& docker pull summaplatform/$${@F}:$3 \
 	&& docker tag summaplatform/$${@F}:$3 ${REGISTRY}/$${@F}:$3
 
-image/mt-engine-$1-$2:
+image/mt-engine-$1-$2: image/mt-engine
 	BASE_IMAGE=${MT_ENGINE_IMAGE} \
 	MODEL_IMAGE=${REGISTRY}/mt-model-$1-$2:$3 \
 	TARGET_IMAGE=${REGISTRY}/mt-engine-$1-$2:$3 \
