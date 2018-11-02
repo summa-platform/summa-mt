@@ -30,19 +30,20 @@ def setup_argparser(ap):
     safe_add_arg(ap, "--model", "-m",
                  default=os.environ.get('MT_MODEL_PATH','/model'),
                  help="path to model directory")
+
     # marian should automatically select a port, actually
     safe_add_arg(ap, '--marian_port', "-P",
                  default=os.environ.get('MARIAN_SERVER_PORT','8080'),
                  help="port number for the Marian Server")
+
     safe_add_arg(ap, "--cpu-threads", type=int,
-                 help="Number of threads Marian should use."
+                 help="Number of threads Marian should use.",
                  default=os.environ.get('MARIAN_CPU_THREADS',
                                         multiprocessing.cpu_count()))
     safe_add_arg(ap, "--beam-size", type=int,
-                 default=os.environ.get('MARIAN_BEAM_SIZE',0),
-                 help="Beam size for translation.")
+                 help="Beam size for translation.",
+                 default=os.environ.get('MARIAN_BEAM_SIZE',0))
     return
-
 
 # find the marian executable
 marian = None
