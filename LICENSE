@@ -1,3 +1,18 @@
+The code in this repository comes with a mix of licenses
+- The files in 
+  - docker/mt-engine/summa_mt/recaser
+  - docker/mt-engine/summa_mt/share
+  - docker/mt-engine/summa_mt/tokenizer
+  were copied from the Moses project (http://github.com/moses-smt/mosesdecoder) 
+  and are covered by the Lesser Gnu Public License v2.1 
+  (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
+  
+- For sentence splitting, this module relies on 
+  - Eserix (https://github.com/emjotde/eserix), which is under the LGPL v.3.0
+  - Sentence splitting for portuguese from NLTK (http://github.com/nltk/nltk), which is covered by the Apache License v. 2.0
+
+All files that are genuine new contributions to this repository are covered by the 
+
 MIT License
 
 Copyright (c) 2018 University of Edinburgh
