@@ -85,6 +85,12 @@ image/mt-marian-compiled:
 	docker-compose -f docker/compose/build.yml build \
 	${EXTRA_BUILD_OPTIONS} --no-cache ${@F}
 
+# make sure LICENSE.txt is up to date in the docker container
+docker/mt-basic-engine/LICENSE.txt: LICENSE.txt
+	cp LICENSE.txt ${@D}
+
+image/mt-basic-engine: docker/mt-basic-engine/LICENSE.txt
+
 image/mt-basic-engine: 
 	BASE_IMAGE=${MARIAN_BUILDER} \
 	TARGET_IMAGE=${MARIAN_IMAGE} \
