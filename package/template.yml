@@ -1,0 +1,107 @@
+# Template for packaging config file for MT models within SUMMA
+# Below
+# preprocess: preprocessing specification
+# marian: the template for the marian config file
+# postprocess: postprocessing specification
+# sources: full local path specification of model files to be included
+
+# The steps normalize_unicode, split_sentences, truecase, and bpe are
+# steps with functions built into the SUMMA processing pipeline. Other
+# steps may require an external script, in which case the 'command' parameter
+# must be specified.
+
+# variables can be used with '{<variable name>}' in string-valued keys and values
+
+variables:
+  L1: de
+  L2: en
+  trn_root: /home/shared/germann/wmt18/data.vocab35K/runs/de-en/run5/
+  wmt17_dir: /home/shared/germann/wmt18/wmt17
+
+model_info:
+  version: 2
+  maintainer: "Ulrich Germann <ugermann@inf.ed.ac.uk>"
+  date: 2018-07-12
+  source-language: "{L1}"
+  target-language: "{L2}"
+  files:
+    # - uedin-wmt18-de-en-run5.npz
+    - model.bin
+    - deen.bpe
+    # - truecase-model.de
+    - truecase-model.de.dbm
+    - vocab.de
+    - vocab.de.yml
+    # - vocab.en
+    - vocab.en.yml
+    - decoder.yml
+    - preprocess.yml
+    - postprocess.yml
+  
+preprocess:
+  language: "{L1}"
+  steps:
+
+    - action: normalize_unicode
+      form: NFC
+
+    - action: normalize_punctuation
+      command: "tokenizer/normalize-punctuation.perl -l {L1}"
+
+    - action: split_sentences
+      max-sentence-length: 60
+      language: de
+
+    - action: tokenize
+      command: "tokenizer/tokenizer.perl -q -a -l {L1}"
+
+    - action: truecase
+      model: "truecase-model.{L1}.dbm"
+
+    - action: bpe
+      codes: "{L1}{L2}.bpe"
+      # Only specify vocabulary and vocabulary-threshold if you were using
+      # it for training!
+      vocabulary: "vocab.{L1}"
+      vocabulary-threshold: 50
+
+decoder:
+  models:
+    - model.bin
+  vocabs:
+    - vocab.{L1}.yml
+    - vocab.{L2}.yml
+  normalize: 1
+  beam-size: 4
+  mini-batch: 1
+  relative-paths: true
+
+postprocess:
+  steps:
+    - action: de-bpe
+      pattern: "@@(?: +|$)"
+
+    - action: fix-eos
+      description: Fix final periods in translation output.
+
+    - action: detokenize
+      command: "tokenizer/detokenizer.perl -penn -q -l {L2}"
+
+    - action: recase
+      command: recaser/detruecase.perl
+
+    - action: apply-regex
+      description: An attempt to fix quotation marks
+      pattern: '" +(.*?) "'
+      replacement: '"\1"'
+
+# remote: "" # URL where model can be downloaded
+
+# Map names of files in the image onto their local destinations
+local: 
+  "truecase-model.{L1}.dbm": "/home/shared/germann/wmt18/data/mdl/truecasing-model.de"
+  "{L1}{L2}.bpe": "{trn_root}/mdl/bpe35.mdl"
+  "vocab.{L1}": "{trn_root}/mdl/bpe35-vcb.de"
+  "model.bin": "{trn_root}/model/model.npz.best-translation.npz"
+  "vocab.{L1}.yml": "{trn_root}/model/vocab.{L1}.yml"
+  "vocab.{L2}.yml": "{trn_root}/model/vocab.{L2}.yml"
