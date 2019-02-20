@@ -1,15 +1,51 @@
 mt-models:
+  ar-en:
   de-en:
-    latest: "20180712"
-    "20180712": 
-      URL: "http://data.statmt.org/summa/mt/models/de-en/20180712/"
-      date: 2018-07-12
+    latest: "20181023"
+    "20181023": 
+      URL: "http://data.statmt.org/summa/mt/models/de-en/20181023/"
+      date: 2018-10-23
       info: "Model built for WMT18 shared task on news translation."
 
+  es-en:
+    latest: v2.0
+    "v2.0":
+      URL: "http://data.statmt.org/summa/mt/models/es-en/v2.0/"
+      date: 2018-12-07
+      info: "Transformer model trained by Faheem Kirefu."
+      
   fa-en:
-    latest: "20180712"
-    "20180712":
-      URL: "http://data.statmt.org/summa/mt/models/fa-en/20180712/"
-      date: 2018-07-12
+    latest: "20181017"
+    "20181017":
+      URL: "http://data.statmt.org/summa/mt/models/fa-en/20181017/"
+      date: 2018-10-17
+      info: ""
+
+  lv-en:
+    latest: "20181217"
+    "20181217":
+      URL: "http://data.statmt.org/summa/mt/models/lv-en/20181217/"
+      date: 2018-12-17
+      info: ""
+      
+  pt-en:
+    latest: "20181207"
+    "20181207":
+      URL: "http://data.statmt.org/summa/mt/models/pt-en/20181207/"
+      date: 2018-12-07
+      info: ""
+
+  ru-en:
+    latest: "20181207"
+    "20181207":
+      URL: "http://data.statmt.org/summa/mt/models/ru-en/20181207/"
+      date: 2018-12-07
+      info: ""
+
+  uk-en:
+    latest: "20181207"
+    "20181207":
+      URL: "http://data.statmt.org/summa/mt/models/uk-en/20181207/"
+      date: 2018-12-07
       info: ""
       
