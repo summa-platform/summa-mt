@@ -3,6 +3,7 @@ SHELL   = bash
 mydir  := $(dir $(lastword ${MAKEFILE_LIST}))
 
 LOCAL_REGISTRY=summaplatform
+# LOCAL_REGISTRY=local
 GITHASH = $(shell git rev-parse HEAD)
 REGISTRY=${LOCAL_REGISTRY}
 BUILD_ENVIRONMENT = ${REGISTRY}/mt-build-environment
@@ -143,13 +144,13 @@ $(eval $(call download_model,pt-en,20181207))
 $(eval $(call download_model,ru-en,20181207))
 $(eval $(call download_model,uk-en,20181207))
 
-$(eval $(call build_engine_with_model,de,en,20181023,v2.0.0))
+$(eval $(call build_engine_with_model,de,en,20181023,v2.0.1))
 $(eval $(call build_engine_with_model,es,en,v2.0,v2.0.1))
-$(eval $(call build_engine_with_model,fa,en,20181017,v2.0.0))
-$(eval $(call build_engine_with_model,lv,en,20181217,v2.0.0))
-$(eval $(call build_engine_with_model,pt,en,20181207,v2.0.0))
-$(eval $(call build_engine_with_model,ru,en,20181207,v2.0.0))
-$(eval $(call build_engine_with_model,uk,en,20181207,v2.0.0))
+$(eval $(call build_engine_with_model,fa,en,20181017,v2.0.1))
+$(eval $(call build_engine_with_model,lv,en,20181217,v2.0.1))
+$(eval $(call build_engine_with_model,pt,en,20181207,v2.0.1))
+$(eval $(call build_engine_with_model,ru,en,20181207,v2.0.1))
+$(eval $(call build_engine_with_model,uk,en,20181207,v2.0.1))
 
 
 # NOTE: to build and tag model containers, cd into the respective model directory,
