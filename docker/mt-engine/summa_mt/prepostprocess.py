@@ -141,12 +141,13 @@ class PrePostProcessor:
             logger.debug("INPUT\n%s\n"%text)
         for step in self.steps:
             text = step(text)
-            if __name__ == "__main__":
+            if True or __name__ == "__main__":
                 logger.debug(step.name)
                 if type(text).__name__ == "list":
                     for t in text:
                         logger.debug(t)
-                    else: logger.debug(text)
+                        pass
+                else: logger.debug(text)
                 logger.debug("")
                 pass
         return text 
