@@ -21,7 +21,7 @@ for use within the SUMMA platform and a batch translation
 script for testing. For the latter, use, e.g.
 
 ```
-cat source.txt | docker run --rm -i summa-platform/mt-engine-de-en ./translate.py --cpu-threads=2 [-v]
+cat source.txt | docker run --rm -i summaplatform/mt-engine-de-en ./translate.py --cpu-threads=2 [-v]
 ```
 
 By default, the image uses as many threads as the host has cpus, but
